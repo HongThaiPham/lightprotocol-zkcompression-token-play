@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LightProtocol ZK Compression Token
+
+Welcome to the **LightProtocol ZK Compression Token** project! This repository focuses on implementing SPL token compression using Zero-Knowledge (ZK) technology on the Solana blockchain. The goal is to enhance scalability, privacy, and efficiency for token-based applications.
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Features](#features)
+- [Getting Started](#getting-started)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Architecture](#architecture)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Introduction
+
+Token compression is a critical aspect of blockchain scalability. By leveraging Zero-Knowledge proofs, this project enables efficient and private SPL token operations on Solana. The combination of ZK technology and Solana's high-performance blockchain ensures a seamless experience for developers and users.
+
+---
+
+## Features
+
+- **Token Compression**: Reduce the storage footprint of SPL tokens on-chain.
+- **Zero-Knowledge Proofs**: Ensure privacy and security for token operations.
+- **High Scalability**: Leverage Solana's fast and low-cost transactions.
+- **Developer-Friendly**: Easy-to-integrate SDKs and APIs for building applications.
+
+---
 
 ## Getting Started
 
-First, run the development server:
+To get started with this project, clone the repository and follow the installation instructions below.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Contributing
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+We welcome contributions! Please follow these steps:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Fork the repository.
+2. Create a new branch for your feature or bugfix.
+3. Submit a pull request with a detailed description of your changes.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
+This project is licensed under the [MIT License](LICENSE).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Happy coding! 🚀
