@@ -1,21 +1,21 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 
 export type SolAsset = {
-  mint: PublicKey;
+  mint: string;
   name: string;
   symbol: string;
   image: string;
   decimals: number;
   price: number;
   userTokenAccount?: {
-    address: PublicKey;
+    address: string;
     amount: number;
   };
 };
 
 export type FetchAssetsArgs = {
-  addresses: PublicKey[];
-  owner?: PublicKey;
+  addresses: string[];
+  owner?: string;
   connection?: Connection;
   combineNativeBalance?: boolean;
 };
@@ -25,4 +25,16 @@ export type FetchWalletArgs = {
   limit?: number;
   connection?: Connection;
   combineNativeBalance?: boolean;
+};
+
+export type SearchAssetsArgs = {
+  query: string;
+  owner?: PublicKey;
+  connection?: Connection;
+  combineNativeBalance?: boolean;
+};
+
+export type TrendingAssetsArgs = {
+  owner?: PublicKey;
+  limit?: number;
 };

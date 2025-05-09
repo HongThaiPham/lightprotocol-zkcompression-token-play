@@ -1,6 +1,8 @@
-import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import "server-only";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { SolAsset, FetchAssetsArgs } from "@/lib/types";
 import { WSOL_MINT } from "@/lib/consts";
+import { networkConnection } from "../shared";
 
 /**
  * Fetches token asset data from Helius API for a list of token addresses
@@ -21,7 +23,7 @@ import { WSOL_MINT } from "@/lib/consts";
 const fetchAssets = async ({
   addresses,
   owner,
-  connection,
+  connection = networkConnection,
   combineNativeBalance = true, // Default to combining WSOL and native SOL
 }: FetchAssetsArgs): Promise<SolAsset[]> => {
   const fetchedAssets: SolAsset[] = [];
@@ -57,11 +59,11 @@ const fetchAssets = async ({
     if (
       owner &&
       connection &&
-      addresses.some((addr) => addr.equals(WSOL_MINT)) &&
+      addresses.some((addr) => new PublicKey(addr).equals(WSOL_MINT)) &&
       combineNativeBalance
     ) {
       try {
-        nativeSolBalance = await connection.getBalance(owner);
+        nativeSolBalance = await connection.getBalance(new PublicKey(owner));
         nativeSolBalance = nativeSolBalance / LAMPORTS_PER_SOL;
       } catch (error) {
         console.error("Error fetching native SOL balance:", error);
@@ -106,7 +108,6 @@ const fetchAssets = async ({
         }
       });
     }
-
     for (const asset of metadataData.result) {
       const isWsol = asset.id === WSOL_MINT.toString();
       const assetBalance = balances[asset.id] || 0;
@@ -118,15 +119,15 @@ const fetchAssets = async ({
           : assetBalance;
 
       fetchedAssets.push({
-        mint: new PublicKey(asset.id),
+        mint: asset.id,
         name: asset.content.metadata.name,
-        symbol: asset.content.metadata.symbol,
+        symbol: asset.content.metadata.symbol || asset.token_info.symbol,
         image: asset.content.files[0].cdn_uri || asset.content.files[0].uri,
         price: asset.token_info.price_info.price_per_token,
         decimals: asset.token_info.decimals,
         userTokenAccount: owner
           ? {
-              address: new PublicKey(asset.id),
+              address: asset.id,
               amount: totalBalance,
             }
           : undefined,

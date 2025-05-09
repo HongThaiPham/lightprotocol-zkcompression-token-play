@@ -68,9 +68,8 @@ const Wallet = ({ address, assets, trigger, onAssetClick }: WalletProps) => {
   }, [connection, address]);
 
   React.useEffect(() => {
-    if (domain) return;
     fetchDomain();
-  }, [fetchDomain, domain]);
+  }, [fetchDomain]);
 
   if (!address) {
     return <Skeleton className="h-full w-full rounded-full" />;
@@ -86,7 +85,7 @@ const Wallet = ({ address, assets, trigger, onAssetClick }: WalletProps) => {
           </Button>
         )}
       </SheetTrigger>
-      <SheetContent className="flex flex-col px-0 pb-0">
+      <SheetContent className="flex flex-col px-0 pb-0 py-2">
         <SheetHeader className="relative flex flex-col items-center justify-center">
           <SheetTitle className="absolute inset-y-0 left-4 flex flex-col items-start justify-center gap-0.5 text-sm font-normal text-muted-foreground">
             <div className="flex items-center gap-2">
@@ -140,7 +139,7 @@ const Wallet = ({ address, assets, trigger, onAssetClick }: WalletProps) => {
             <div className="flex flex-col gap-4 overflow-y-auto">
               {filteredAssets.map((asset) => (
                 <button
-                  key={asset.mint.toBase58()}
+                  key={asset.mint}
                   onClick={() => onAssetClick?.(asset)}
                   className="flex items-center gap-2 rounded-md px-4 py-2 text-sm even:bg-muted/50"
                 >

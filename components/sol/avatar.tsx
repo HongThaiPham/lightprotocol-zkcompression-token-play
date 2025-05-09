@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React from "react";
@@ -7,9 +6,11 @@ import { PublicKey } from "@solana/web3.js";
 import { minidenticon } from "minidenticons";
 
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { AspectRatio } from "../ui/aspect-ratio";
 
 type AvatarProps = {
-  address: PublicKey;
+  address: PublicKey | string;
   size?: number;
   className?: string;
   alt?: string;
@@ -38,12 +39,14 @@ const Avatar = ({ address, size = 48, className, alt }: AvatarProps) => {
       )}
       style={{ width: size, height: size }}
     >
-      <img
-        src={identicon}
-        alt={alt || pubkeyStr || ""}
-        width={size}
-        height={size}
-      />
+      <AspectRatio>
+        <Image
+          src={identicon}
+          alt={alt || pubkeyStr || ""}
+          width={size}
+          height={size}
+        />
+      </AspectRatio>
     </div>
   );
 };

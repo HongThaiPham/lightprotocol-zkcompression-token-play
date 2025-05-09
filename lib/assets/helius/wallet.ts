@@ -1,6 +1,7 @@
-import { PublicKey, Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { SolAsset, FetchWalletArgs } from "@/lib/types";
 import { SOL_MINT, WSOL_MINT } from "@/lib/consts";
+import { networkConnection } from "../shared";
 
 /**
  * Fetches all token assets for a wallet address from Helius API
@@ -17,7 +18,7 @@ import { SOL_MINT, WSOL_MINT } from "@/lib/consts";
  */
 const fetchWalletAssets = async ({
   owner,
-  connection,
+  connection = networkConnection,
   limit = 20,
   combineNativeBalance = true,
 }: FetchWalletArgs & { connection?: Connection }): Promise<SolAsset[]> => {
@@ -82,7 +83,7 @@ const fetchWalletAssets = async ({
         // Only include WSOL if not combining with native SOL
         if (!combineNativeBalance) {
           fetchedAssets.push({
-            mint: WSOL_MINT,
+            mint: WSOL_MINT.toBase58(),
             name: "Wrapped SOL",
             symbol: "WSOL",
             image:
@@ -90,7 +91,7 @@ const fetchWalletAssets = async ({
             price: asset.token_info.price_info?.price_per_token,
             decimals: asset.token_info.decimals,
             userTokenAccount: {
-              address: WSOL_MINT,
+              address: WSOL_MINT.toBase58(),
               amount: wsolBalance,
             },
           });
@@ -103,14 +104,14 @@ const fetchWalletAssets = async ({
         Math.pow(10, asset.token_info.decimals);
 
       fetchedAssets.push({
-        mint: new PublicKey(asset.id),
+        mint: asset.id,
         name: asset.content.metadata.name,
-        symbol: asset.content.metadata.symbol,
+        symbol: asset.content.metadata.symbol || asset.token_info.symbol,
         image: asset.content.files?.[0]?.uri,
         price: asset.token_info.price_info?.price_per_token,
         decimals: asset.token_info.decimals,
         userTokenAccount: {
-          address: new PublicKey(asset.id),
+          address: asset.id,
           amount: tokenBalance,
         },
       });
@@ -122,7 +123,7 @@ const fetchWalletAssets = async ({
       : nativeSolBalance;
 
     fetchedAssets.push({
-      mint: SOL_MINT,
+      mint: SOL_MINT.toBase58(),
       name: "Solana",
       symbol: "SOL",
       image:
@@ -130,7 +131,7 @@ const fetchWalletAssets = async ({
       price: solPrice,
       decimals: 9,
       userTokenAccount: {
-        address: SOL_MINT,
+        address: SOL_MINT.toBase58(),
         amount: totalSolBalance,
       },
     });
