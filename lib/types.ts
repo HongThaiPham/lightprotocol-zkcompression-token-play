@@ -1,13 +1,12 @@
 import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { TokenMetadata } from "@solana/spl-token-metadata";
 
 export type SolAsset = {
   mint: string;
   name: string;
   symbol: string;
-  image: string;
+  image?: string;
   decimals: number;
-  price: number;
+  price?: number;
   userTokenAccount?: {
     address: string;
     amount: number;
@@ -28,6 +27,13 @@ export type FetchWalletArgs = {
   combineNativeBalance?: boolean;
 };
 
+export type FetchWalletCompressedTokensArgs = {
+  owner: string;
+  mint?: string;
+  limit?: number;
+
+};
+
 export type SearchAssetsArgs = {
   query: string;
   owner?: PublicKey;
@@ -43,7 +49,10 @@ export type TrendingAssetsArgs = {
 export type CreateMintArgs = {
   authority?: PublicKey;
   decimals?: number;
-  metadata?: TokenMetadata;
+  name: string;
+  symbol: string;
+  uri: string;
+  additionalMetadata?: (readonly [string, string])[];
 };
 
 export type MintCompressedTokenArgs = {
@@ -87,7 +96,17 @@ export type CreateZKMintIxArgs = {
   creator: PublicKey;
   authority?: PublicKey;
   decimals?: number;
-  metadata?: TokenMetadata;
+  name: string;
+  symbol: string;
+  uri: string;
+  additionalMetadata?: (readonly [string, string])[];
+};
+
+export type CreateZKMintToIxArgs = {
+  authority: PublicKey;
+  mint: PublicKey;
+  amount: number;
+  to: PublicKey;
 };
 
 export type CreateZKTransferIxArgs = {

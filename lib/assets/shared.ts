@@ -6,3 +6,4 @@ export const networkConnection = new Connection(
     commitment: "confirmed",
   }
 );
+

@@ -1,17 +1,18 @@
 "use client";
 import CreateMintButton from "@/components/CreateMintButton";
+import MintToButton from "@/components/MintToButton";
 import { useWallet } from "@solana/wallet-adapter-react";
 import React from "react";
 
 export default function Home() {
-  const { publicKey } = useWallet();
-
+  const { connected } = useWallet();
+  if (!connected) {
+    return null;
+  }
   return (
     <div>
-      <h2>sdfjhsdkfhl</h2>
-
-      <div>{publicKey?.toBase58()}</div>
       <CreateMintButton />
+      <MintToButton />
     </div>
   );
 }

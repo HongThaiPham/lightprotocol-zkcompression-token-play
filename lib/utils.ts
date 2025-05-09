@@ -138,3 +138,15 @@ export const validatePublicKey = (address: PublicKey | string) => {
     return false;
   }
 };
+
+
+export const getExplorerUrl = (address: string, type: 'account' | 'tx') => {
+  const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK;
+  if (network === "devnet") {
+    return `https://solscan.io/${type}/${address}?cluster=devnet`;
+  } else if (network === "testnet") {
+    return `https://solscan.io/${type}/${address}?cluster=testnet`;
+  } else {
+    return `https://solscan.io/${type}/${address}`;
+  }
+}

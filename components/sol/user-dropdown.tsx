@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { Avatar } from "@/components/sol/avatar";
 import { TokenIcon } from "@/components/sol/token-icon";
+import Link from "next/link";
 
 type UserDropdownProps = {
   address: PublicKey | null;
@@ -127,17 +128,25 @@ const UserDropdown = ({
           )}
 
           {connected && (
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full"
-              onClick={() => {
-                disconnect();
-                setIsOpen(false);
-              }}
-            >
-              Logout
-            </Button>
+            <>
+              <Button variant="secondary" size="sm" className="w-full" asChild>
+                <Link href={`/tokens/${address.toBase58()}`}>
+                  My compressed tokens
+                </Link>
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  disconnect();
+                  setIsOpen(false);
+                }}
+              >
+                Logout
+              </Button>
+            </>
           )}
         </div>
       </PopoverContent>

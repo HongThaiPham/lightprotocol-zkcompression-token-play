@@ -1,9 +1,10 @@
 import {
   createZKMintIx,
+  createZKMintToIx,
   getTxnForSigning,
   lightConnection,
 } from "@/lib/light-protocol";
-import { CreateMintArgs, BaseTxnResult } from "@/lib/types";
+import { CreateMintArgs, BaseTxnResult, MintCompressedTokenArgs } from "@/lib/types";
 import { Rpc } from "@lightprotocol/stateless.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
@@ -14,7 +15,7 @@ type LightProtocolContextType = {
   createMint: (
     args?: CreateMintArgs
   ) => Promise<BaseTxnResult & { mint: PublicKey }>;
-  // mintTokens: (args: MintCompressedTokenArgs) => Promise<BaseTxnResult>;
+  mintTokens: (args: MintCompressedTokenArgs) => Promise<BaseTxnResult>;
   // transferTokens: (args: TransferTokensArgs) => Promise<BaseTxnResult>;
   // compressToken: (args: CompressTokenArgs) => Promise<BaseTxnResult>;
   // descompressToken: (args: DecompressTokenArgs) => Promise<BaseTxnResult>;
@@ -35,7 +36,7 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
   const { publicKey: connectedWallet, sendTransaction } = useWallet();
 
   const createMint = async (
-    { authority = connectedWallet as PublicKey, decimals = 9 } = {
+    { authority = connectedWallet as PublicKey, decimals = 9, name,symbol,uri,additionalMetadata } = {
       authority: connectedWallet as PublicKey,
       decimals: 9,
     } as CreateMintArgs
@@ -54,6 +55,10 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
       creator: connectedWallet,
       authority,
       decimals,
+      name,
+      symbol,
+      uri,
+      additionalMetadata,
     });
 
     console.log("Getting txn for signing...");
@@ -82,11 +87,61 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
     return { txnSignature, mint: mintKp.publicKey };
   };
 
+  const mintTokens = async ({
+    to,
+    amount,
+    mint,
+    authority = connectedWallet as PublicKey,
+  }: MintCompressedTokenArgs) => {
+    if (!connectedWallet) {
+      throw new Error("No connected wallet");
+    }
+   
+
+    console.log("getting blockhash...");
+    const {
+      context: { slot: minContextSlot },
+      value: blockhashCtx,
+    } = await lightConnection.getLatestBlockhashAndContext();
+
+    console.log("creating mint to instructions...");
+    const { instructions } = await createZKMintToIx({
+      authority,
+      mint,
+      amount,
+      to,
+    });
+
+
+    console.log("building txn...");
+    const transaction = getTxnForSigning(
+      instructions,
+      connectedWallet,
+      blockhashCtx.blockhash,
+    );
+
+    console.log("sending tx for signing...");
+    const signature = await sendTransaction(transaction, lightConnection, {
+      minContextSlot,
+    });
+
+    console.log("confirming tx...");
+    await lightConnection.confirmTransaction({
+      blockhash: blockhashCtx.blockhash,
+      lastValidBlockHeight: blockhashCtx.lastValidBlockHeight,
+      signature,
+    });
+
+    console.log("tx confirmed", signature);
+    return { txnSignature: signature };
+  };
+
   return (
     <LightProtocolContext.Provider
       value={{
-        connection: {} as Rpc,
+        connection: lightConnection,
         createMint,
+        mintTokens
       }}
     >
       {children}

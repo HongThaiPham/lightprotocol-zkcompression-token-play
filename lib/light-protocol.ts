@@ -14,14 +14,12 @@ import {
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
-import { CreateZKMintIxArgs, BaseIxResponse } from "./types";
+import { CreateZKMintIxArgs, BaseIxResponse, CreateZKMintToIxArgs } from "./types";
 
 import {
   createInitializeMintInstruction,
-  createInitializeMint2Instruction,
   createInitializeMetadataPointerInstruction,
   TOKEN_2022_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
   getMintLen,
   ExtensionType,
   MINT_SIZE,
@@ -46,10 +44,12 @@ export const lightConnection: Rpc = createRpc(
   PROVER_ENDPOINT
 );
 
+
 export const createZKMintIx = async ({
   creator,
   authority,
   decimals = 9,
+  name, symbol, uri, additionalMetadata = []
 }: CreateZKMintIxArgs): Promise<BaseIxResponse & { mintKp: Keypair }> => {
   const mintKp = Keypair.generate();
   const mintAddress = mintKp.publicKey;
@@ -57,154 +57,127 @@ export const createZKMintIx = async ({
   const freezeAuthority = authority ?? creator;
   const metadata: TokenMetadata = {
     mint: mintAddress,
-    name: "name",
-    symbol: "symbol",
-    uri: "uri",
-    additionalMetadata: [["key", "value"]],
+    name,
+    symbol,
+    uri,
+    additionalMetadata
   };
 
-  if (metadata) {
-    console.log("Handling metadata mint...");
-    const mintLen = getMintLen([ExtensionType.MetadataPointer]);
 
-    // get rent exemption
-    console.log("getting rent exemption...");
-    const rentExemptBalance = await getMintRentExemption(metadata);
+  console.log("Handling metadata mint...");
+  const mintLen = getMintLen([ExtensionType.MetadataPointer]);
 
-    /// Create and initialize SPL Mint account
-    const createMintAccountIx = SystemProgram.createAccount({
-      fromPubkey: creator,
-      lamports: rentExemptBalance,
-      newAccountPubkey: mintAddress,
-      programId: TOKEN_2022_PROGRAM_ID,
-      space: mintLen,
-    });
-    console.log("Deriving token pool pda...");
+  // get rent exemption
+  console.log("getting rent exemption...");
+  const rentExemptBalance = await getMintRentExemption(metadata);
 
-    // Instruction to initialize Mint Account data
-    const initializeMintInstruction = createInitializeMintInstruction(
-      mintAddress, // Mint Account Address
-      decimals, // Decimals of Mint
-      mintAuthority, // Designated Mint Authority
-      freezeAuthority, // Optional Freeze Authority
-      TOKEN_2022_PROGRAM_ID // Token Extension Program ID
+  /// Create and initialize SPL Mint account
+  const createMintAccountIx = SystemProgram.createAccount({
+    fromPubkey: creator,
+    lamports: rentExemptBalance,
+    newAccountPubkey: mintAddress,
+    programId: TOKEN_2022_PROGRAM_ID,
+    space: mintLen,
+  });
+  console.log("Deriving token pool pda...");
+
+  // Instruction to initialize Mint Account data
+  const initializeMintInstruction = createInitializeMintInstruction(
+    mintAddress, // Mint Account Address
+    decimals, // Decimals of Mint
+    mintAuthority, // Designated Mint Authority
+    freezeAuthority, // Optional Freeze Authority
+    TOKEN_2022_PROGRAM_ID // Token Extension Program ID
+  );
+
+  /////////////////////////////////
+  // create metadata instructions
+  /////////////////////////////////
+  console.log("creating metadata instructions...");
+  // Instruction to invoke System Program to create new account
+  const initializeMetadataPointerInstruction =
+    createInitializeMetadataPointerInstruction(
+      mintAddress, // Mint Account address
+      mintAuthority, // Authority that can set the metadata address
+      mintAuthority, // Account address that holds the metadata
+      TOKEN_2022_PROGRAM_ID
     );
+  // Instruction to initialize Metadata Account data
+  const initializeMetadataInstruction = createInitializeInstruction({
+    programId: TOKEN_2022_PROGRAM_ID, // Token Extension Program as Metadata Program
+    metadata: mintAddress, // Account address that holds the metadata
+    updateAuthority: mintAuthority, // Authority that can update the metadata
+    mint: mintAddress, // Mint Account address
+    mintAuthority: mintAuthority, // Designated Mint Authority
+    name: metadata.name,
+    symbol: metadata.symbol,
+    uri: metadata.uri,
+  });
 
-    /////////////////////////////////
-    // create metadata instructions
-    /////////////////////////////////
-    console.log("creating metadata instructions...");
-    // Instruction to invoke System Program to create new account
-    const initializeMetadataPointerInstruction =
-      createInitializeMetadataPointerInstruction(
-        mintAddress, // Mint Account address
-        mintAuthority, // Authority that can set the metadata address
-        mintAuthority, // Account address that holds the metadata
-        TOKEN_2022_PROGRAM_ID
-      );
-    // Instruction to initialize Metadata Account data
-    const initializeMetadataInstruction = createInitializeInstruction({
-      programId: TOKEN_2022_PROGRAM_ID, // Token Extension Program as Metadata Program
-      metadata: mintAddress, // Account address that holds the metadata
-      updateAuthority: mintAuthority, // Authority that can update the metadata
-      mint: mintAddress, // Mint Account address
-      mintAuthority: mintAuthority, // Designated Mint Authority
-      name: metadata.name,
-      symbol: metadata.symbol,
-      uri: metadata.uri,
-    });
+  // Instruction to update metadata, adding custom field
+  const updateFieldInstruction = createUpdateFieldInstruction({
+    programId: TOKEN_2022_PROGRAM_ID, // Token Extension Program as Metadata Program
+    metadata: mintAddress, // Account address that holds the metadata
+    updateAuthority: mintAuthority, // Authority that can update the metadata
+    field: metadata.additionalMetadata[0][0], // key
+    value: metadata.additionalMetadata[0][1], // value
+  });
 
-    // Instruction to update metadata, adding custom field
-    const updateFieldInstruction = createUpdateFieldInstruction({
-      programId: TOKEN_2022_PROGRAM_ID, // Token Extension Program as Metadata Program
-      metadata: mintAddress, // Account address that holds the metadata
-      updateAuthority: mintAuthority, // Authority that can update the metadata
-      field: metadata.additionalMetadata[0][0], // key
-      value: metadata.additionalMetadata[0][1], // value
-    });
+  console.log("Creating token pool instructions...");
+  const createTokenPoolIx = await CompressedTokenProgram.createTokenPool({
+    feePayer: creator,
+    mint: mintAddress,
+    tokenProgramId: TOKEN_2022_PROGRAM_ID,
+  });
 
-    const createMintIxs = [
-      createMintAccountIx,
-      initializeMetadataPointerInstruction,
-      ///////////////////////////////////////////
-      // the above instructions MUST happen first
-      ///////////////////////////////////////////
-      initializeMintInstruction,
-      initializeMetadataInstruction,
-      updateFieldInstruction,
-    ];
+  const createMintIxs = [
+    createMintAccountIx,
+    initializeMetadataPointerInstruction,
+    ///////////////////////////////////////////
+    // the above instructions MUST happen first
+    ///////////////////////////////////////////
+    initializeMintInstruction,
+    initializeMetadataInstruction,
+    updateFieldInstruction,
+    createTokenPoolIx
+  ];
 
-    return { instructions: createMintIxs, mintKp };
-  } else {
-    console.log("Handling non-metadata mint...");
+  return { instructions: createMintIxs, mintKp };
 
-    const rentExemptBalance =
-      await lightConnection.getMinimumBalanceForRentExemption(MINT_SIZE);
-
-    const createMintAccountInstruction = SystemProgram.createAccount({
-      fromPubkey: creator,
-      lamports: rentExemptBalance,
-      newAccountPubkey: mintAddress,
-      programId: TOKEN_PROGRAM_ID,
-      space: MINT_SIZE,
-    });
-
-    const initializeMintInstruction = createInitializeMint2Instruction(
-      mintAddress,
-      decimals,
-      mintAuthority,
-      freezeAuthority,
-      TOKEN_PROGRAM_ID
-    );
-
-    // create token pool info to enable compressiong
-    // const tokenPoolPda = CompressedTokenProgram.deriveTokenPoolPda(mintAddress);
-    // create token pool instructions
-    console.log("Creating token pool instructions...");
-    const createTokenPoolIx = await CompressedTokenProgram.createTokenPool({
-      feePayer: creator,
-      mint: mintAddress,
-      tokenProgramId: TOKEN_2022_PROGRAM_ID,
-    });
-
-    // await compressedMintProgram.methods
-    //   .createTokenPool()
-    //   .accounts({
-    //     mint: mintAddress,
-    //     feePayer: creator,
-    //     tokenPoolPda,
-    //     systemProgram: SystemProgram.programId,
-    //     tokenProgram: TOKEN_PROGRAM_ID,
-    //     cpiAuthorityPda: deriveCpiAuthorityPda(),
-    //   })
-    //   .instruction();
-
-    const [outputStateTreeInfo] = await lightConnection.getStateTreeInfos();
-    const [tokenPoolInfo] = await getTokenPoolInfos(
-      lightConnection,
-      mintAddress
-    );
-
-    const mintInitialIx = await CompressedTokenProgram.mintTo({
-      feePayer: creator,
-      mint: mintAddress,
-      authority: mintAuthority,
-      amount: BigInt(1000 * 10 ** decimals),
-      toPubkey: creator,
-      outputStateTreeInfo,
-      tokenPoolInfo,
-    });
-
-    const createMintIxs = [
-      createMintAccountInstruction,
-      initializeMintInstruction,
-      createTokenPoolIx,
-      mintInitialIx,
-    ];
-
-    return { instructions: createMintIxs, mintKp };
-  }
 };
+
+
+export const createZKMintToIx = async ({
+
+  mint,
+  amount,
+  to,
+  authority,
+}: CreateZKMintToIxArgs): Promise<BaseIxResponse> => {
+
+  const tokAmount = BigInt(amount);
+  const [outputStateTreeInfo] = await lightConnection.getStateTreeInfos();
+  const [tokenPoolInfo] = await getTokenPoolInfos(
+    lightConnection,
+    mint
+  );
+  const mintToIx = await CompressedTokenProgram.mintTo({
+    feePayer: authority,
+    mint,
+    authority: authority ?? to,
+    amount: tokAmount,
+    toPubkey: to,
+    outputStateTreeInfo,
+    tokenPoolInfo,
+  });
+
+  const createMintToIx = [mintToIx]
+
+  return { instructions: createMintToIx };
+}
+
+
+
 
 // export const createZKTransferIx = async ({
 //   owner,
@@ -390,23 +363,7 @@ export const getMintRentExemption = async (metaData?: TokenMetadata) => {
   return rentExemptBalance;
 };
 
-// export const deriveTokenPoolPda = (mint: PublicKey): PublicKey => {
-//   const POOL_SEED = Buffer.from("pool");
-//   const seeds = [POOL_SEED, mint.toBuffer()];
-//   const [address] = PublicKey.findProgramAddressSync(
-//     seeds,
-//     COMPRESSED_TOKEN_PROGRAM_ID
-//   );
-//   return address;
-// };
 
-// export const deriveCpiAuthorityPda = (): PublicKey => {
-//   const [address] = PublicKey.findProgramAddressSync(
-//     [CPI_AUTHORITY_SEED],
-//     COMPRESSED_TOKEN_PROGRAM_ID
-//   );
-//   return address;
-// };
 
 // export const getCompressedMintProgam = (connectedWallet: PublicKey) => {
 //   const provider = new AnchorProvider(lightConnection, connectedWallet, {

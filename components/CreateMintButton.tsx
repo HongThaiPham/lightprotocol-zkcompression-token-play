@@ -7,11 +7,21 @@ import { Loader2Icon } from "lucide-react";
 
 const CreateMintButton = () => {
   const { createMint } = useLightProtocol();
+  const metadata = {
+    name: "name",
+    symbol: "symbol",
+    uri: "uri",
+    additionalMetadata: [["type", "cToken"]] as (readonly [string, string])[],
+  };
   const { mutate, isPending } = useMutation({
     mutationKey: ["createMint"],
     mutationFn: () =>
       createMint({
         decimals: 9,
+        name: metadata.name,
+        symbol: metadata.symbol,
+        uri: metadata.uri,
+        additionalMetadata: metadata.additionalMetadata,
       }),
   });
   const handleClick = async () => {

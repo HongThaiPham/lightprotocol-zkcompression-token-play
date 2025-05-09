@@ -17,22 +17,7 @@ const useAssets = ({
         addresses: addresses.map((address) => address.toString()),
         owner: owner ? owner.toString() : undefined,
       });
-      //   return fetch("api/assets", {
-      //     method: "POST",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //     },
-      //     body: JSON.stringify({
-      //       addresses,
-      //       owner,
-      //     }),
-      //   })
-      //     .then((res) => res.json())
-      //     .catch((error) => {
-      //       console.error("Error fetching assets:", error);
-      //       return [];
-      //     });
-      // },
+
     },
   });
 };
