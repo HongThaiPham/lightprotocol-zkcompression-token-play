@@ -1,7 +1,8 @@
-import { Rpc, createRpc } from "@lightprotocol/stateless.js";
+import { HashWithTree, Rpc, bn, createRpc } from "@lightprotocol/stateless.js";
 import {
   CompressedTokenProgram,
   getTokenPoolInfos,
+  selectMinCompressedTokenAccountsForTransfer,
 } from "@lightprotocol/compressed-token";
 
 import {
@@ -14,7 +15,7 @@ import {
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
-import { CreateZKMintIxArgs, BaseIxResponse, CreateZKMintToIxArgs } from "./types";
+import { CreateZKMintIxArgs, BaseIxResponse, CreateZKMintToIxArgs, CreateZKTransferIxArgs, CreateZKCompressIxArgs, CreateZKDecompressIxArgs } from "./types";
 
 import {
   createInitializeMintInstruction,
@@ -25,6 +26,8 @@ import {
   MINT_SIZE,
   TYPE_SIZE,
   LENGTH_SIZE,
+  getAssociatedTokenAddressSync,
+  createAssociatedTokenAccountInstruction,
 } from "@solana/spl-token";
 import {
   createInitializeInstruction,
@@ -33,6 +36,7 @@ import {
   TokenMetadata,
 } from "@solana/spl-token-metadata";
 import { DEFAULT_PRIORITY_FEE } from "./consts";
+import { checkIfAccountExist, checkIfAtaExist } from "./utils";
 
 const RPC_ENDPOINT = process.env.NEXT_PUBLIC_RPC_URL as string;
 const PHOTON_ENDPOINT = RPC_ENDPOINT;
@@ -148,7 +152,6 @@ export const createZKMintIx = async ({
 
 
 export const createZKMintToIx = async ({
-
   mint,
   amount,
   to,
@@ -179,145 +182,160 @@ export const createZKMintToIx = async ({
 
 
 
-// export const createZKTransferIx = async ({
-//   owner,
-//   mint,
-//   amount,
-//   to,
-// }: CreateZKTransferIxArgs): Promise<BaseIxResponse> => {
-//   const tokAmount = bn(amount);
+export const createZKTransferIx = async ({
+  owner,
+  mint,
+  amount,
+  to,
+}: CreateZKTransferIxArgs): Promise<BaseIxResponse> => {
+  const tokAmount = bn(amount);
 
-//   console.log("getting compressed token accounts...");
-//   const compressedTokenAccounts =
-//     await lightConnection.getCompressedTokenAccountsByOwner(owner, {
-//       mint,
-//     });
-//   const [inputAccounts] = selectMinCompressedTokenAccountsForTransfer(
-//     compressedTokenAccounts.items,
-//     tokAmount
-//   );
+  console.log("getting compressed token accounts...");
+  const compressedTokenAccounts =
+    await lightConnection.getCompressedTokenAccountsByOwner(owner, {
+      mint,
+    });
+  const [inputAccounts] = selectMinCompressedTokenAccountsForTransfer(
+    compressedTokenAccounts.items,
+    tokAmount
+  );
 
-//   console.log("getting validity proof...");
-//   const proof = await lightConnection.getValidityProof(
-//     inputAccounts.map((account) => bn(account.compressedAccount.hash))
-//   );
+  console.log("getting validity proof...");
+  const hashWithTree: HashWithTree[] = inputAccounts.map((account) => ({
+    hash: bn(account.compressedAccount.hash),
+    queue: account.compressedAccount.treeInfo.queue,
+    tree: account.compressedAccount.treeInfo.tree
+  }))
+  const proof = await lightConnection.getValidityProofV0(
+    hashWithTree
+  );
 
-//   console.log("transferring compressed tokens...");
-//   const ix = await CompressedTokenProgram.transfer({
-//     payer: owner,
-//     inputCompressedTokenAccounts: inputAccounts,
-//     toAddress: to,
-//     amount: tokAmount,
-//     recentInputStateRootIndices: proof.rootIndices,
-//     recentValidityProof: proof.compressedProof,
-//     //   outputStateTrees: merkleTree,
-//   });
+  console.log("transferring compressed tokens...");
+  const ix = await CompressedTokenProgram.transfer({
+    payer: owner,
+    inputCompressedTokenAccounts: inputAccounts,
+    toAddress: to,
+    amount: tokAmount,
+    recentInputStateRootIndices: proof.rootIndices,
+    recentValidityProof: proof.compressedProof,
+  });
 
-//   return { instructions: [ix] };
-// };
+  return { instructions: [ix] };
+};
 
-// export const createCompressTokenIx = async ({
-//   receiver,
-//   mint,
-//   amount,
-//   payer = receiver,
-// }: CreateZKCompressIxArgs): Promise<BaseIxResponse & { ata: PublicKey }> => {
-//   const originalAta = getAssociatedTokenAddressSync(
-//     mint,
-//     receiver,
-//     false,
-//     TOKEN_2022_PROGRAM_ID
-//   );
+export const createCompressTokenIx = async ({
+  receiver,
+  mint,
+  amount,
+  payer = receiver,
+}: CreateZKCompressIxArgs): Promise<BaseIxResponse & { ata: PublicKey }> => {
+  const originalAta = getAssociatedTokenAddressSync(
+    mint,
+    receiver,
+    false,
+    TOKEN_2022_PROGRAM_ID
+  );
 
-//   const tokenPoolPda = deriveTokenPoolPda(mint);
-//   const doesPoolPDAExist = await checkIfAccountExist(tokenPoolPda);
+  const tokenPoolPda = CompressedTokenProgram.deriveTokenPoolPda(mint);
+  const doesPoolPDAExist = await checkIfAccountExist(tokenPoolPda);
 
-//   const instructions: TransactionInstruction[] = [];
+  const instructions: TransactionInstruction[] = [];
 
-//   // if the pool pda does not exist, create it
-//   if (!doesPoolPDAExist) {
-//     // create token pool info to enable compressiong
-//     const compressedMintProgram = getCompressedMintProgam(receiver);
-//     // create token pool instructions
-//     console.log("Creating token pool instructions...");
-//     const createTokenPoolIx = await compressedMintProgram.methods
-//       .createTokenPool()
-//       .accounts({
-//         mint,
-//         feePayer: payer,
-//         tokenPoolPda,
-//         systemProgram: SystemProgram.programId,
-//         tokenProgram: TOKEN_PROGRAM_ID,
-//         cpiAuthorityPda: deriveCpiAuthorityPda(),
-//       })
-//       .instruction();
-//     instructions.push(createTokenPoolIx);
-//   }
+  // if the pool pda does not exist, create it
+  if (!doesPoolPDAExist) {
 
-//   if (!originalAta) {
-//     throw new Error("Original ATA not found - create it?");
-//   }
+    // create token pool instructions
+    console.log("Creating token pool instructions...");
+    const createTokenPoolIx = await CompressedTokenProgram.createTokenPool({
+      feePayer: payer,
+      mint,
+      tokenProgramId: TOKEN_2022_PROGRAM_ID,
+    });
+    instructions.push(createTokenPoolIx);
+  }
 
-//   const compressIx = await CompressedTokenProgram.compress({
-//     payer,
-//     owner: receiver,
-//     source: originalAta,
-//     toAddress: receiver,
-//     amount,
-//     mint,
-//   });
-//   instructions.push(compressIx);
+  if (!originalAta) {
+    throw new Error("Original ATA not found - create it?");
+  }
 
-//   return { instructions, ata: originalAta };
-// };
+  const [outputStateTreeInfo] = await lightConnection.getStateTreeInfos();
+  const [tokenPoolInfo] = await getTokenPoolInfos(
+    lightConnection,
+    mint
+  );
 
-// export const createDecompressTokenIx = async ({
-//   owner,
-//   mint,
-//   amount,
-// }: CreateZKDecompressIxArgs): Promise<BaseIxResponse & { ata: PublicKey }> => {
-//   const { ata, isValid: isAtaValid } = await checkIfAtaExist({ owner, mint });
+  const compressIx = await CompressedTokenProgram.compress({
+    payer,
+    owner: receiver,
+    source: originalAta,
+    toAddress: receiver,
+    amount,
+    mint,
+    outputStateTreeInfo,
+    tokenPoolInfo
+  });
+  instructions.push(compressIx);
 
-//   const instructions: TransactionInstruction[] = [];
+  return { instructions, ata: originalAta };
+};
 
-//   if (!isAtaValid) {
-//     const createAtaIx = createAssociatedTokenAccountInstruction(
-//       owner,
-//       ata,
-//       owner,
-//       mint
-//     );
-//     instructions.push(createAtaIx);
-//   }
+export const createDecompressTokenIx = async ({
+  owner,
+  mint,
+  amount,
+}: CreateZKDecompressIxArgs): Promise<BaseIxResponse & { ata: PublicKey }> => {
+  const { ata, isValid: isAtaValid } = await checkIfAtaExist({ owner, mint });
 
-//   const { items: compressedTokenAccounts } =
-//     await lightConnection.getCompressedTokenAccountsByOwner(owner, {
-//       mint,
-//     });
+  const instructions: TransactionInstruction[] = [];
 
-//   const [inputAccounts] = selectMinCompressedTokenAccountsForTransfer(
-//     compressedTokenAccounts,
-//     amount
-//   );
+  if (!isAtaValid) {
+    const createAtaIx = createAssociatedTokenAccountInstruction(
+      owner,
+      ata,
+      owner,
+      mint
+    );
+    instructions.push(createAtaIx);
+  }
 
-//   const proof = await lightConnection.getValidityProof(
-//     inputAccounts.map((account) => bn(account.compressedAccount.hash))
-//   );
+  const { items: compressedTokenAccounts } =
+    await lightConnection.getCompressedTokenAccountsByOwner(owner, {
+      mint,
+    });
 
-//   // 4. Create the decompress instruction
-//   const decompressIx = await CompressedTokenProgram.decompress({
-//     payer: owner,
-//     inputCompressedTokenAccounts: inputAccounts,
-//     toAddress: ata,
-//     amount,
-//     recentInputStateRootIndices: proof.rootIndices,
-//     recentValidityProof: proof.compressedProof,
-//   });
+  const [inputAccounts] = selectMinCompressedTokenAccountsForTransfer(
+    compressedTokenAccounts,
+    amount
+  );
 
-//   instructions.push(decompressIx);
+  const hashWithTree: HashWithTree[] = inputAccounts.map((account) => ({
+    hash: bn(account.compressedAccount.hash),
+    queue: account.compressedAccount.treeInfo.queue,
+    tree: account.compressedAccount.treeInfo.tree
+  }))
+  const proof = await lightConnection.getValidityProofV0(
+    hashWithTree
+  );
 
-//   return { instructions, ata };
-// };
+  // 4. Create the decompress instruction
+  const tokenPoolInfos = await getTokenPoolInfos(
+    lightConnection,
+    mint
+  );
+  const decompressIx = await CompressedTokenProgram.decompress({
+    payer: owner,
+    inputCompressedTokenAccounts: inputAccounts,
+    toAddress: ata,
+    amount,
+    recentInputStateRootIndices: proof.rootIndices,
+    recentValidityProof: proof.compressedProof,
+    tokenPoolInfos
+  });
+
+  instructions.push(decompressIx);
+
+  return { instructions, ata };
+};
 
 export const getTxnForSigning = (
   txnInstructions: TransactionInstruction | TransactionInstruction[],
@@ -365,122 +383,5 @@ export const getMintRentExemption = async (metaData?: TokenMetadata) => {
 
 
 
-// export const getCompressedMintProgam = (connectedWallet: PublicKey) => {
-//   const provider = new AnchorProvider(lightConnection, connectedWallet, {
-//     commitment: "confirmed",
-//   });
-//   return new Program(IDL, COMPRESSED_TOKEN_PROGRAM_ID, provider);
-// };
 
-// export const getCompressedMintInfo = async ({
-//   // owner,
-//   mint,
-// }: {
-//   // owner: PublicKey;
-//   mint: PublicKey;
-// }): Promise<CompressedTokenDetails> => {
-//   const lightRpc = getLightRpc();
-//   // fetch compressed account from helius
-//   const compressedAccountResponse = await fetch(getRpcUrl(), {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//     },
-//     body: JSON.stringify({
-//       jsonrpc: "2.0",
-//       id: "get-compressed-account",
-//       method: "getCompressedAccount",
-//       params: {
-//         address: mint?.toBase58(),
-//       },
-//     }),
-//   });
-//   const compressedAccountResponseData = await compressedAccountResponse.json();
-//   const compressedAccountInfo = compressedAccountResponseData?.result?.value;
-//   // fetch mint info from solana
-//   const mintInfo = await getMint(lightRpc, mint);
-//   const formattedCompressedAccountInfo: CompressedTokenDetails = {
-//     account: {
-//       hash: compressedAccountInfo?.hash,
-//       lamports: compressedAccountInfo?.lamports,
-//       leafIndex: compressedAccountInfo?.leafIndex,
-//       owner: compressedAccountInfo?.owner,
-//       seq: compressedAccountInfo?.seq,
-//       slotCreated: compressedAccountInfo?.slotCreated,
-//       tree: compressedAccountInfo?.tree,
-//       data: {
-//         data: compressedAccountInfo?.data?.data,
-//         dataHash: compressedAccountInfo?.data?.dataHash,
-//         discriminator: compressedAccountInfo?.data?.discriminator,
-//       },
-//     },
-//     token: {
-//       mint: mintInfo?.address,
-//       decimals: mintInfo?.decimals,
-//       mintAuthority: mintInfo?.mintAuthority,
-//       freezeAuthority: mintInfo?.freezeAuthority,
-//     },
-//   };
-//   return formattedCompressedAccountInfo;
-// };
 
-// export const fetCompressedTokenBalances = async (
-//   wallet: PublicKey,
-//   mint?: string
-// ) => {
-//   const response = await fetch(getRpcUrl(), {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//     },
-//     body: JSON.stringify({
-//       jsonrpc: "2.0",
-//       id: "compressed-token-balances",
-//       method: "getCompressedTokenBalancesByOwner",
-//       params: {
-//         owner: wallet.toBase58(),
-//         mint: mint || null,
-//       },
-//     }),
-//   });
-
-//   if (response.status === 429) {
-//     throw new Error("Too many requests. Try again in a few seconds.");
-//   }
-
-//   if (!response.ok) {
-//     throw new Error("Failed to fetch compressed token balances");
-//   }
-
-//   const data = await response.json();
-//   const compressedTokenBalances = data?.result?.value?.token_balances;
-
-//   if (!compressedTokenBalances) {
-//     return [];
-//   }
-
-//   const compressedTokens = compressedTokenBalances.map((token: any) => ({
-//     mint: token.mint,
-//     balance: Number(token.balance), // Ensure balance is a number for accurate sorting
-//     compressed: true,
-//   }));
-
-//   // Sort by balance descending, then by mint address ascending
-//   compressedTokens.sort((a: any, b: any) => {
-//     if (b.balance !== a.balance) {
-//       return b.balance - a.balance; // Primary sort: balance descending
-//     }
-//     // Secondary sort: mint address ascending
-//     return a.mint.localeCompare(b.mint);
-//   });
-
-//   return compressedTokens;
-// };
-
-// export const fetchCompressedSignatures = async (wallet: PublicKey) => {
-//   const lightRpc = getLightRpc();
-//   const compressedSignatures = await lightRpc.getCompressionSignaturesForOwner(
-//     wallet
-//   );
-//   console.log("compressedSignatures", compressedSignatures);
-// };

@@ -1,8 +1,10 @@
 import "server-only";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-import { SolAsset, FetchAssetsArgs } from "@/lib/types";
+import { SolAsset, FetchAssetsArgs, CompressedTokenDetails } from "@/lib/types";
 import { WSOL_MINT } from "@/lib/consts";
 import { networkConnection } from "../shared";
+import { lightConnection } from "@/lib/light-protocol";
+import { getMint } from "@solana/spl-token";
 
 /**
  * Fetches token asset data from Helius API for a list of token addresses
@@ -127,9 +129,9 @@ const fetchAssets = async ({
         decimals: asset.token_info.decimals,
         userTokenAccount: owner
           ? {
-              address: asset.id,
-              amount: totalBalance,
-            }
+            address: asset.id,
+            amount: totalBalance,
+          }
           : undefined,
       });
     }
@@ -140,5 +142,68 @@ const fetchAssets = async ({
     return [];
   }
 };
+
+
+export const getCompressedMintInfo = async ({
+  // owner,
+  mint,
+}: {
+  // owner: PublicKey;
+  mint: PublicKey;
+}): Promise<CompressedTokenDetails> => {
+  // fetch compressed account from helius
+  const compressedAccountResponse = await fetch(process.env.NEXT_PUBLIC_RPC_URL!, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: "get-compressed-account",
+      method: "getCompressedAccount",
+      params: {
+        address: mint?.toBase58(),
+      },
+    }),
+  });
+  const compressedAccountResponseData = await compressedAccountResponse.json();
+  const compressedAccountInfo = compressedAccountResponseData?.result?.value;
+  // fetch mint info from solana
+  const mintInfo = await getMint(lightConnection, mint);
+  const formattedCompressedAccountInfo: CompressedTokenDetails = {
+    account: {
+      hash: compressedAccountInfo?.hash,
+      lamports: compressedAccountInfo?.lamports,
+      leafIndex: compressedAccountInfo?.leafIndex,
+      owner: compressedAccountInfo?.owner,
+      seq: compressedAccountInfo?.seq,
+      slotCreated: compressedAccountInfo?.slotCreated,
+      tree: compressedAccountInfo?.tree,
+      data: {
+        data: compressedAccountInfo?.data?.data,
+        dataHash: compressedAccountInfo?.data?.dataHash,
+        discriminator: compressedAccountInfo?.data?.discriminator,
+      },
+    },
+    token: {
+      mint: mintInfo?.address,
+      decimals: mintInfo?.decimals,
+      mintAuthority: mintInfo?.mintAuthority,
+      freezeAuthority: mintInfo?.freezeAuthority,
+    },
+  };
+  return formattedCompressedAccountInfo;
+};
+
+
+
+export const fetchCompressedSignatures = async (wallet: PublicKey) => {
+
+  const compressedSignatures = await lightConnection.getCompressionSignaturesForOwner(
+    wallet
+  );
+  console.log("compressedSignatures", compressedSignatures);
+};
+
 
 export { fetchAssets };

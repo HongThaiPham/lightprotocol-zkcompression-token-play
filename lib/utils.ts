@@ -1,7 +1,9 @@
+import { getAccount, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { clsx, type ClassValue } from "clsx";
 import millify from "millify";
 import { twMerge } from "tailwind-merge";
+import { networkConnection } from "./assets/shared";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -150,3 +152,48 @@ export const getExplorerUrl = (address: string, type: 'account' | 'tx') => {
     return `https://solscan.io/${type}/${address}`;
   }
 }
+
+export const checkIfAtaExist = async ({
+  owner,
+  mint,
+}: {
+  owner: PublicKey;
+  mint: PublicKey;
+}) => {
+
+
+  const ata = getAssociatedTokenAddressSync(mint, owner, false, TOKEN_2022_PROGRAM_ID);
+  // check if originalAta is valid
+  let hasAta = false;
+  if (ata) {
+    try {
+      await getAccount(networkConnection, ata);
+      hasAta = true;
+    } catch (error) {
+      // we assume the ata is not valid if we get an error
+      // create the ata here
+      console.log(`Error getting ATA ${ata.toBase58()}:`, error);
+      console.log(
+        `No ATA found for ${mint.toBase58()} owned by ${owner.toBase58()}`
+      );
+    }
+  }
+  return { ata: ata as PublicKey, isValid: hasAta };
+};
+
+export const checkIfAccountExist = async (account: PublicKey) => {
+
+
+  let accountExist = false;
+  if (account) {
+    try {
+      await getAccount(networkConnection, account);
+      accountExist = true;
+    } catch (error) {
+      // we assume the ata is not valid if we get an error
+      // create the ata here
+      console.log(`Error getting account ${account.toBase58()}:`, error);
+    }
+  }
+  return accountExist;
+};

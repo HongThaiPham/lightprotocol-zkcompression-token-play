@@ -4,11 +4,16 @@ import {
   getTxnForSigning,
   lightConnection,
 } from "@/lib/light-protocol";
-import { CreateMintArgs, BaseTxnResult, MintCompressedTokenArgs } from "@/lib/types";
+import {
+  CreateMintArgs,
+  BaseTxnResult,
+  MintCompressedTokenArgs,
+} from "@/lib/types";
 import { Rpc } from "@lightprotocol/stateless.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { createContext, PropsWithChildren, useContext } from "react";
+import { useTxnToast } from "../sol/txn-toast";
 
 type LightProtocolContextType = {
   connection: Rpc;
@@ -34,9 +39,17 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
   children,
 }) => {
   const { publicKey: connectedWallet, sendTransaction } = useWallet();
+  const { txnToast } = useTxnToast();
 
   const createMint = async (
-    { authority = connectedWallet as PublicKey, decimals = 9, name,symbol,uri,additionalMetadata } = {
+    {
+      authority = connectedWallet as PublicKey,
+      decimals = 9,
+      name,
+      symbol,
+      uri,
+      additionalMetadata,
+    } = {
       authority: connectedWallet as PublicKey,
       decimals: 9,
     } as CreateMintArgs
@@ -44,6 +57,7 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
     if (!connectedWallet) {
       throw new Error("No connected wallet");
     }
+    const signingToast = txnToast();
 
     console.log("getting blockhash...");
     const {
@@ -76,11 +90,13 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
     });
 
     console.log("confirming tx...");
-    await lightConnection.confirmTransaction({
+    const confirmation = lightConnection.confirmTransaction({
       blockhash: blockhashCtx.blockhash,
       lastValidBlockHeight: blockhashCtx.lastValidBlockHeight,
       signature: txnSignature,
     });
+
+    signingToast.confirm(txnSignature, confirmation);
 
     console.log("tx confirmed:", txnSignature);
     console.log("new mint:", mintKp.publicKey);
@@ -96,7 +112,7 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
     if (!connectedWallet) {
       throw new Error("No connected wallet");
     }
-   
+    const signingToast = txnToast();
 
     console.log("getting blockhash...");
     const {
@@ -112,12 +128,11 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
       to,
     });
 
-
     console.log("building txn...");
     const transaction = getTxnForSigning(
       instructions,
       connectedWallet,
-      blockhashCtx.blockhash,
+      blockhashCtx.blockhash
     );
 
     console.log("sending tx for signing...");
@@ -126,11 +141,13 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
     });
 
     console.log("confirming tx...");
-    await lightConnection.confirmTransaction({
+
+    const confirmation = lightConnection.confirmTransaction({
       blockhash: blockhashCtx.blockhash,
       lastValidBlockHeight: blockhashCtx.lastValidBlockHeight,
       signature,
     });
+    signingToast.confirm(signature, confirmation);
 
     console.log("tx confirmed", signature);
     return { txnSignature: signature };
@@ -141,7 +158,7 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
       value={{
         connection: lightConnection,
         createMint,
-        mintTokens
+        mintTokens,
       }}
     >
       {children}
