@@ -75,7 +75,7 @@ const Header = ({ showSidebarTrigger = false }: HeaderProps) => {
             </li>
             <li>
               <Link
-                href="/"
+                href="/create-c-token"
                 className="hidden text-sm text-muted-foreground transition-colors hover:text-primary xl:block"
               >
                 Create cToken

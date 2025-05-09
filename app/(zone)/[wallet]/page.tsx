@@ -7,11 +7,7 @@ type Props = {
 };
 const CTokenOfWallet: React.FC<Props> = async ({ params }) => {
   const { wallet } = await params;
-  return (
-    <div className="mx-auto flex w-full max-w-[1440px] flex-col items-center p-8">
-      <TokenListByOwner wallet={wallet} />
-    </div>
-  );
+  return <TokenListByOwner wallet={wallet} />;
 };
 
 export default CTokenOfWallet;
