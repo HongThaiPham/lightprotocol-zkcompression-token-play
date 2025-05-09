@@ -15,3 +15,5 @@ export const USDC_MINT = new PublicKey(
 export const USDC_MINT_DEVNET = new PublicKey(
   "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
 );
+
+export const DEFAULT_PRIORITY_FEE = 1_000_000;
