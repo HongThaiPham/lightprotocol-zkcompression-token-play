@@ -1,10 +1,17 @@
 import "server-only";
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-import { SolAsset, FetchWalletArgs, FetchWalletCompressedTokensArgs } from "@/lib/types";
+import {
+  SolAsset,
+  FetchWalletArgs,
+  FetchWalletCompressedTokensArgs,
+} from "@/lib/types";
 import { SOL_MINT, WSOL_MINT } from "@/lib/consts";
 import { networkConnection } from "../shared";
-import { getMint, getTokenMetadata, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
-
+import {
+  getMint,
+  getTokenMetadata,
+  TOKEN_2022_PROGRAM_ID,
+} from "@solana/spl-token";
 
 /**
  * Fetches all token assets for a wallet address from Helius API
@@ -153,8 +160,6 @@ const fetchWalletAssets = async ({
   }
 };
 
-
-
 const fetchWalletCompressedTokens = async ({
   owner,
   mint,
@@ -174,27 +179,34 @@ const fetchWalletCompressedTokens = async ({
         params: {
           owner: owner.toString(),
           mint,
-          limit
+          limit,
         },
       }),
     });
 
     const data = await response.json();
 
-
     if (!data || !data.result || data.error) {
       console.error("Error fetching assets:", data.error);
       return [];
     }
 
-
-
     const items = data.result.value.items;
 
     const mintWithTokenMetdata = await Promise.all(
-      items.map(async (item: { mint: string, balance: number | bigint }) => {
-        const tokenMetadata = await getTokenMetadata(networkConnection, new PublicKey(item.mint), "confirmed", TOKEN_2022_PROGRAM_ID);
-        const mintInfo = await getMint(networkConnection, new PublicKey(item.mint), "confirmed", TOKEN_2022_PROGRAM_ID);
+      items.map(async (item: { mint: string; balance: number | bigint }) => {
+        const tokenMetadata = await getTokenMetadata(
+          networkConnection,
+          new PublicKey(item.mint),
+          "confirmed",
+          TOKEN_2022_PROGRAM_ID
+        );
+        const mintInfo = await getMint(
+          networkConnection,
+          new PublicKey(item.mint),
+          "confirmed",
+          TOKEN_2022_PROGRAM_ID
+        );
         return {
           ...item,
           tokenMetadata,
@@ -203,41 +215,34 @@ const fetchWalletCompressedTokens = async ({
       })
     );
 
-
-
     for (const asset of mintWithTokenMetdata) {
       if (!asset.mintInfo) continue;
       const tokenBalance =
-        Number(asset.balance || 0) /
-        Math.pow(10, asset.mintInfo.decimals);
+        Number(asset.balance || 0) / Math.pow(10, asset.mintInfo.decimals);
 
       fetchedAssets.push({
         mint: asset.mint,
-        name: asset.tokenMetadata?.name || '',
-        symbol: asset.tokenMetadata?.symbol || '',
+        name: asset.tokenMetadata?.name || "",
+        symbol: asset.tokenMetadata?.symbol || "",
         decimals: asset.mintInfo.decimals,
         userTokenAccount: {
           address: asset.mint,
           amount: tokenBalance,
-        }
+        },
+        authority: asset.mintInfo.mintAuthority,
       });
     }
 
-
-    // Sort assets by USD value 
-    return fetchedAssets
-      .sort((a, b) => {
-        const aValue = (a.userTokenAccount?.amount || 0) * (a.price || 0);
-        const bValue = (b.userTokenAccount?.amount || 0) * (b.price || 0);
-        return bValue - aValue;
-      })
-
+    // Sort assets by USD value
+    return fetchedAssets.sort((a, b) => {
+      const aValue = (a.userTokenAccount?.amount || 0) * (a.price || 0);
+      const bValue = (b.userTokenAccount?.amount || 0) * (b.price || 0);
+      return bValue - aValue;
+    });
   } catch (error) {
     console.error("Error fetching wallet assets:", error);
     return [];
   }
 };
-
-
 
 export { fetchWalletAssets, fetchWalletCompressedTokens };

@@ -15,7 +15,14 @@ import {
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
-import { CreateZKMintIxArgs, BaseIxResponse, CreateZKMintToIxArgs, CreateZKTransferIxArgs, CreateZKCompressIxArgs, CreateZKDecompressIxArgs } from "./types";
+import {
+  CreateZKMintIxArgs,
+  BaseIxResponse,
+  CreateZKMintToIxArgs,
+  CreateZKTransferIxArgs,
+  CreateZKCompressIxArgs,
+  CreateZKDecompressIxArgs,
+} from "./types";
 
 import {
   createInitializeMintInstruction,
@@ -48,12 +55,14 @@ export const lightConnection: Rpc = createRpc(
   PROVER_ENDPOINT
 );
 
-
 export const createZKMintIx = async ({
   creator,
   authority,
   decimals = 9,
-  name, symbol, uri, additionalMetadata = []
+  name,
+  symbol,
+  uri,
+  additionalMetadata = [],
 }: CreateZKMintIxArgs): Promise<BaseIxResponse & { mintKp: Keypair }> => {
   const mintKp = Keypair.generate();
   const mintAddress = mintKp.publicKey;
@@ -64,9 +73,8 @@ export const createZKMintIx = async ({
     name,
     symbol,
     uri,
-    additionalMetadata
+    additionalMetadata,
   };
-
 
   console.log("Handling metadata mint...");
   const mintLen = getMintLen([ExtensionType.MetadataPointer]);
@@ -103,7 +111,7 @@ export const createZKMintIx = async ({
     createInitializeMetadataPointerInstruction(
       mintAddress, // Mint Account address
       mintAuthority, // Authority that can set the metadata address
-      mintAuthority, // Account address that holds the metadata
+      mintAddress, // Account address that holds the metadata
       TOKEN_2022_PROGRAM_ID
     );
   // Instruction to initialize Metadata Account data
@@ -119,13 +127,28 @@ export const createZKMintIx = async ({
   });
 
   // Instruction to update metadata, adding custom field
-  const updateFieldInstruction = createUpdateFieldInstruction({
-    programId: TOKEN_2022_PROGRAM_ID, // Token Extension Program as Metadata Program
-    metadata: mintAddress, // Account address that holds the metadata
-    updateAuthority: mintAuthority, // Authority that can update the metadata
-    field: metadata.additionalMetadata[0][0], // key
-    value: metadata.additionalMetadata[0][1], // value
-  });
+  let updateFieldInstructions: ReturnType<
+    typeof createUpdateFieldInstruction
+  >[] = [];
+  if (metadata.additionalMetadata.length > 0) {
+    updateFieldInstructions = metadata.additionalMetadata.map((item) =>
+      createUpdateFieldInstruction({
+        programId: TOKEN_2022_PROGRAM_ID, // Token Extension Program as Metadata Program
+        metadata: mintAddress, // Account address that holds the metadata
+        updateAuthority: mintAuthority, // Authority that can update the metadata
+        field: item[0], // key
+        value: item[1], // value
+      })
+    );
+  }
+
+  // const updateFieldInstruction = createUpdateFieldInstruction({
+  //   programId: TOKEN_2022_PROGRAM_ID, // Token Extension Program as Metadata Program
+  //   metadata: mintAddress, // Account address that holds the metadata
+  //   updateAuthority: mintAuthority, // Authority that can update the metadata
+  //   field: metadata.additionalMetadata[0][0], // key
+  //   value: metadata.additionalMetadata[0][1], // value
+  // });
 
   console.log("Creating token pool instructions...");
   const createTokenPoolIx = await CompressedTokenProgram.createTokenPool({
@@ -142,14 +165,12 @@ export const createZKMintIx = async ({
     ///////////////////////////////////////////
     initializeMintInstruction,
     initializeMetadataInstruction,
-    updateFieldInstruction,
-    createTokenPoolIx
+    ...updateFieldInstructions,
+    createTokenPoolIx,
   ];
 
   return { instructions: createMintIxs, mintKp };
-
 };
-
 
 export const createZKMintToIx = async ({
   mint,
@@ -157,13 +178,9 @@ export const createZKMintToIx = async ({
   to,
   authority,
 }: CreateZKMintToIxArgs): Promise<BaseIxResponse> => {
-
   const tokAmount = BigInt(amount);
   const [outputStateTreeInfo] = await lightConnection.getStateTreeInfos();
-  const [tokenPoolInfo] = await getTokenPoolInfos(
-    lightConnection,
-    mint
-  );
+  const [tokenPoolInfo] = await getTokenPoolInfos(lightConnection, mint);
   const mintToIx = await CompressedTokenProgram.mintTo({
     feePayer: authority,
     mint,
@@ -174,13 +191,10 @@ export const createZKMintToIx = async ({
     tokenPoolInfo,
   });
 
-  const createMintToIx = [mintToIx]
+  const createMintToIx = [mintToIx];
 
   return { instructions: createMintToIx };
-}
-
-
-
+};
 
 export const createZKTransferIx = async ({
   owner,
@@ -204,11 +218,9 @@ export const createZKTransferIx = async ({
   const hashWithTree: HashWithTree[] = inputAccounts.map((account) => ({
     hash: bn(account.compressedAccount.hash),
     queue: account.compressedAccount.treeInfo.queue,
-    tree: account.compressedAccount.treeInfo.tree
-  }))
-  const proof = await lightConnection.getValidityProofV0(
-    hashWithTree
-  );
+    tree: account.compressedAccount.treeInfo.tree,
+  }));
+  const proof = await lightConnection.getValidityProofV0(hashWithTree);
 
   console.log("transferring compressed tokens...");
   const ix = await CompressedTokenProgram.transfer({
@@ -243,7 +255,6 @@ export const createCompressTokenIx = async ({
 
   // if the pool pda does not exist, create it
   if (!doesPoolPDAExist) {
-
     // create token pool instructions
     console.log("Creating token pool instructions...");
     const createTokenPoolIx = await CompressedTokenProgram.createTokenPool({
@@ -259,10 +270,7 @@ export const createCompressTokenIx = async ({
   }
 
   const [outputStateTreeInfo] = await lightConnection.getStateTreeInfos();
-  const [tokenPoolInfo] = await getTokenPoolInfos(
-    lightConnection,
-    mint
-  );
+  const [tokenPoolInfo] = await getTokenPoolInfos(lightConnection, mint);
 
   const compressIx = await CompressedTokenProgram.compress({
     payer,
@@ -272,7 +280,7 @@ export const createCompressTokenIx = async ({
     amount,
     mint,
     outputStateTreeInfo,
-    tokenPoolInfo
+    tokenPoolInfo,
   });
   instructions.push(compressIx);
 
@@ -311,17 +319,12 @@ export const createDecompressTokenIx = async ({
   const hashWithTree: HashWithTree[] = inputAccounts.map((account) => ({
     hash: bn(account.compressedAccount.hash),
     queue: account.compressedAccount.treeInfo.queue,
-    tree: account.compressedAccount.treeInfo.tree
-  }))
-  const proof = await lightConnection.getValidityProofV0(
-    hashWithTree
-  );
+    tree: account.compressedAccount.treeInfo.tree,
+  }));
+  const proof = await lightConnection.getValidityProofV0(hashWithTree);
 
   // 4. Create the decompress instruction
-  const tokenPoolInfos = await getTokenPoolInfos(
-    lightConnection,
-    mint
-  );
+  const tokenPoolInfos = await getTokenPoolInfos(lightConnection, mint);
   const decompressIx = await CompressedTokenProgram.decompress({
     payer: owner,
     inputCompressedTokenAccounts: inputAccounts,
@@ -329,7 +332,7 @@ export const createDecompressTokenIx = async ({
     amount,
     recentInputStateRootIndices: proof.rootIndices,
     recentValidityProof: proof.compressedProof,
-    tokenPoolInfos
+    tokenPoolInfos,
   });
 
   instructions.push(decompressIx);
@@ -380,8 +383,3 @@ export const getMintRentExemption = async (metaData?: TokenMetadata) => {
     await lightConnection.getMinimumBalanceForRentExemption(dataLength);
   return rentExemptBalance;
 };
-
-
-
-
-

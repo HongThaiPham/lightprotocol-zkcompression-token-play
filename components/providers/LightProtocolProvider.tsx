@@ -57,6 +57,7 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
     if (!connectedWallet) {
       throw new Error("No connected wallet");
     }
+
     const signingToast = txnToast();
 
     console.log("getting blockhash...");

@@ -11,6 +11,7 @@ export type SolAsset = {
     address: string;
     amount: number;
   };
+  authority?: string;
 };
 
 export type FetchAssetsArgs = {
@@ -31,7 +32,6 @@ export type FetchWalletCompressedTokensArgs = {
   owner: string;
   mint?: string;
   limit?: number;
-
 };
 
 export type SearchAssetsArgs = {
