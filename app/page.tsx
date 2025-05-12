@@ -11,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useWallet } from "@solana/wallet-adapter-react";
 import {
   ArrowRight,
   CheckCircle,
@@ -26,10 +25,6 @@ import Link from "next/link";
 import React from "react";
 
 export default function Home() {
-  const { connected } = useWallet();
-  if (!connected) {
-    return null;
-  }
   return (
     <div className="flex min-h-screen flex-col relative">
       <ContinuousParticles />
