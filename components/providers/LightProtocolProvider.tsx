@@ -1,4 +1,6 @@
 import {
+  createCompressTokenIx,
+  createDecompressTokenIx,
   createZKMintIx,
   createZKMintToIx,
   createZKTransferIx,
@@ -10,6 +12,8 @@ import {
   BaseTxnResult,
   MintCompressedTokenArgs,
   TransferTokensArgs,
+  CompressTokenArgs,
+  DecompressTokenArgs,
 } from "@/lib/types";
 import { Rpc } from "@lightprotocol/stateless.js";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -24,8 +28,8 @@ type LightProtocolContextType = {
   ) => Promise<BaseTxnResult & { mint: PublicKey }>;
   mintTokens: (args: MintCompressedTokenArgs) => Promise<BaseTxnResult>;
   transferTokens: (args: TransferTokensArgs) => Promise<BaseTxnResult>;
-  // compressToken: (args: CompressTokenArgs) => Promise<BaseTxnResult>;
-  // descompressToken: (args: DecompressTokenArgs) => Promise<BaseTxnResult>;
+  compressToken: (args: CompressTokenArgs) => Promise<BaseTxnResult>;
+  descompressToken: (args: DecompressTokenArgs) => Promise<BaseTxnResult>;
   // reclaimRent: (args: {
   //   mint: PublicKey;
   //   owner: PublicKey;
@@ -243,6 +247,103 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
     }
   };
 
+  const compressToken = async ({ mint, amount }: CompressTokenArgs) => {
+    if (!connectedWallet) {
+      throw new Error("No connected wallet");
+    }
+
+    const signingToast = txnToast(
+      "Compressing tokens...",
+      "Please sign the transaction to compress tokens"
+    );
+
+    console.log("getting blockhash...");
+    const {
+      context: { slot: minContextSlot },
+      value: blockhashCtx,
+    } = await lightConnection.getLatestBlockhashAndContext();
+
+    console.log("creating compress token instructions...");
+    const { instructions } = await createCompressTokenIx({
+      receiver: connectedWallet,
+      mint,
+      amount,
+    });
+
+    console.log("building txn...");
+    const transaction = getTxnForSigning(
+      instructions,
+      connectedWallet,
+      blockhashCtx.blockhash
+    );
+
+    console.log("sending tx for signing...");
+    const signature = await sendTransaction(transaction, lightConnection, {
+      // skipPreflight: true,
+      minContextSlot,
+    });
+
+    console.log("confirming tx...");
+    const confirmation = lightConnection.confirmTransaction({
+      blockhash: blockhashCtx.blockhash,
+      lastValidBlockHeight: blockhashCtx.lastValidBlockHeight,
+      signature,
+    });
+    await signingToast.confirm(signature, confirmation);
+    console.log("tx confirmed", signature);
+    return {
+      txnSignature: signature,
+    };
+  };
+
+  const descompressToken = async ({ mint, amount }: DecompressTokenArgs) => {
+    if (!connectedWallet) {
+      throw new Error("No connected wallet");
+    }
+    const signingToast = txnToast(
+      "Decompressing tokens...",
+      "Please sign the transaction to decompress tokens"
+    );
+
+    console.log("getting blockhash...");
+    const {
+      context: { slot: minContextSlot },
+      value: blockhashCtx,
+    } = await lightConnection.getLatestBlockhashAndContext();
+
+    console.log("creating decompress token instructions...");
+    const { instructions } = await createDecompressTokenIx({
+      owner: connectedWallet,
+      mint,
+      amount,
+    });
+
+    console.log("building txn...");
+    const transaction = getTxnForSigning(
+      instructions,
+      connectedWallet,
+      blockhashCtx.blockhash
+    );
+
+    console.log("sending tx for signing...");
+    const signature = await sendTransaction(transaction, lightConnection, {
+      minContextSlot,
+    });
+
+    console.log("confirming tx...");
+    const confirmation = lightConnection.confirmTransaction({
+      blockhash: blockhashCtx.blockhash,
+      lastValidBlockHeight: blockhashCtx.lastValidBlockHeight,
+      signature,
+    });
+    await signingToast.confirm(signature, confirmation);
+
+    console.log("tx confirmed", signature);
+    return {
+      txnSignature: signature,
+    };
+  };
+
   return (
     <LightProtocolContext.Provider
       value={{
@@ -250,6 +351,8 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
         createMint,
         mintTokens,
         transferTokens,
+        compressToken,
+        descompressToken,
       }}
     >
       {children}
