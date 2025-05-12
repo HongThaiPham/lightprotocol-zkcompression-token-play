@@ -238,6 +238,14 @@ const CreateCTokenForm = () => {
               )}
               Submit
             </Button>
+            <Button disabled={isPending}>
+              {isPending ? (
+                <Loader2Icon className="animate-spin mr-2" />
+              ) : (
+                <CheckIcon />
+              )}
+              Create with Solana Pay
+            </Button>
           </div>
         </div>
       </form>

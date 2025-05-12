@@ -1,11 +1,14 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import React from "react";
-import { createPayLinkAction } from "../_actions/helio.action";
+import {
+  createChargeLinkAction,
+  createPayLinkAction,
+} from "../_actions/helio.action";
 
 const TestPage = () => {
   const handleCreatePayLink = async () => {
-    const link = await createPayLinkAction();
+    const link = await createChargeLinkAction();
     console.log("HELIO API result", link);
   };
   return (

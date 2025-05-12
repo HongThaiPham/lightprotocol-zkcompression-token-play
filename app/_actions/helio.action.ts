@@ -1,6 +1,6 @@
 "use server";
 
-import { createPayLink } from "@/lib/helio-service";
+import { createChargeLink, createPayLink } from "@/lib/helio-service";
 
 export async function createPayLinkAction(): Promise<{
   url: string;
@@ -14,4 +14,15 @@ export async function createPayLinkAction(): Promise<{
     id: result.id,
     url: `https://app.dev.hel.io/pay/${result.id}`,
   };
+}
+
+export async function createChargeLinkAction(): Promise<{
+  url: string;
+  id: string;
+}> {
+  const result = await createChargeLink();
+  if (!result) {
+    throw new Error("Failed to create charge link");
+  }
+  return result;
 }
