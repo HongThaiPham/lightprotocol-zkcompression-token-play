@@ -228,7 +228,15 @@ export const createZKTransferIx = async ({
   amount,
   to,
 }: CreateZKTransferIxArgs): Promise<BaseIxResponse> => {
-  const tokAmount = bn(amount);
+  const mintAccount = await networkConnection.getAccountInfo(mint);
+  const mintInfo = await getMint(
+    networkConnection,
+    mint,
+    "confirmed",
+    mintAccount?.owner ?? TOKEN_2022_PROGRAM_ID
+  );
+
+  const tokAmount = BigInt(amount * 10 ** mintInfo.decimals);
 
   console.log("getting compressed token accounts...");
   const compressedTokenAccounts =

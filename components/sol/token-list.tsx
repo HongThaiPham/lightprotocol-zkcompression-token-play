@@ -37,6 +37,7 @@ import { Button } from "../ui/button";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import MintToTokenModal from "../modals/MintToTokenModal";
+import TransferTokenModal from "../modals/TransferTokenModal";
 
 type TokenListProps = {
   assets: SolAsset[];
@@ -167,7 +168,16 @@ const TokenList = ({
                     ) : null}
                     <DropdownMenuLabel>Token Account actions</DropdownMenuLabel>
                     <DropdownMenuGroup>
-                      <DropdownMenuItem>Transfer token</DropdownMenuItem>
+                      <TransferTokenModal
+                        trigger={
+                          <DropdownMenuItem
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            Transfer token
+                          </DropdownMenuItem>
+                        }
+                        mintAddress={asset.mint}
+                      />
                     </DropdownMenuGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
