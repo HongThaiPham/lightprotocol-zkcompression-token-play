@@ -35,6 +35,7 @@ import {
   LENGTH_SIZE,
   getAssociatedTokenAddressSync,
   createAssociatedTokenAccountInstruction,
+  getMint,
 } from "@solana/spl-token";
 import {
   createInitializeInstruction,
@@ -44,6 +45,7 @@ import {
 } from "@solana/spl-token-metadata";
 import { DEFAULT_PRIORITY_FEE } from "./consts";
 import { checkIfAccountExist, checkIfAtaExist } from "./utils";
+import { networkConnection } from "./assets/shared";
 
 const RPC_ENDPOINT = process.env.NEXT_PUBLIC_RPC_URL as string;
 const PHOTON_ENDPOINT = RPC_ENDPOINT;
@@ -193,7 +195,16 @@ export const createZKMintToIx = async ({
   to,
   authority,
 }: CreateZKMintToIxArgs): Promise<BaseIxResponse> => {
-  const tokAmount = BigInt(amount);
+  const mintAccount = await networkConnection.getAccountInfo(mint);
+  const mintInfo = await getMint(
+    networkConnection,
+    mint,
+    "confirmed",
+    mintAccount?.owner ?? TOKEN_2022_PROGRAM_ID
+  );
+
+  const tokAmount = BigInt(amount * 10 ** mintInfo.decimals);
+
   const [outputStateTreeInfo] = await lightConnection.getStateTreeInfos();
   const [tokenPoolInfo] = await getTokenPoolInfos(lightConnection, mint);
   const mintToIx = await CompressedTokenProgram.mintTo({

@@ -34,6 +34,9 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
+import MintToTokenModal from "../modals/MintToTokenModal";
 
 type TokenListProps = {
   assets: SolAsset[];
@@ -50,6 +53,7 @@ const TokenList = ({
   onClick,
   isLoading,
 }: TokenListProps) => {
+  const { publicKey } = useWallet();
   return (
     <Table className="w-full">
       <TableHeader>
@@ -139,11 +143,28 @@ const TokenList = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuLabel>Token Mint actions</DropdownMenuLabel>
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem>Mint to</DropdownMenuItem>
-                    </DropdownMenuGroup>
-                    <DropdownMenuSeparator />
+                    {asset.authority &&
+                    publicKey &&
+                    publicKey.equals(new PublicKey(asset.authority)) ? (
+                      <>
+                        <DropdownMenuLabel>
+                          Token Mint actions
+                        </DropdownMenuLabel>
+                        <DropdownMenuGroup>
+                          <MintToTokenModal
+                            trigger={
+                              <DropdownMenuItem
+                                onSelect={(e) => e.preventDefault()}
+                              >
+                                Mint to
+                              </DropdownMenuItem>
+                            }
+                            mintAddress={asset.mint}
+                          />
+                        </DropdownMenuGroup>
+                        <DropdownMenuSeparator />
+                      </>
+                    ) : null}
                     <DropdownMenuLabel>Token Account actions</DropdownMenuLabel>
                     <DropdownMenuGroup>
                       <DropdownMenuItem>Transfer token</DropdownMenuItem>

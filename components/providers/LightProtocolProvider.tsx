@@ -14,6 +14,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { createContext, PropsWithChildren, useContext } from "react";
 import { useTxnToast } from "../sol/txn-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 type LightProtocolContextType = {
   connection: Rpc;
@@ -40,6 +41,7 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
 }) => {
   const { publicKey: connectedWallet, sendTransaction } = useWallet();
   const { txnToast } = useTxnToast();
+  const queryClient = useQueryClient();
 
   const createMint = async (
     {
@@ -163,9 +165,13 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
         lastValidBlockHeight: blockhashCtx.lastValidBlockHeight,
         signature,
       });
-      signingToast.confirm(signature, confirmation);
+      await signingToast.confirm(signature, confirmation);
 
       console.log("tx confirmed", signature);
+
+      await queryClient.invalidateQueries({
+        queryKey: ["compressedTokens", authority.toString()],
+      });
       return { txnSignature: signature };
     } catch (error) {
       console.error("Error minting tokens:", error);
