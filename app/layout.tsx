@@ -3,6 +3,7 @@ import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import AppProvider from "@/components/providers/AppProvider";
 import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -33,6 +34,7 @@ export default function RootLayout({
           <main className="flex min-h-screen flex-col opacity-90">
             <Header />
             {children}
+            <Footer />
           </main>
         </AppProvider>
       </body>

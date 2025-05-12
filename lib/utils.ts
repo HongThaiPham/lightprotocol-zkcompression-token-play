@@ -1,4 +1,8 @@
-import { getAccount, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import {
+  getAccount,
+  getAssociatedTokenAddressSync,
+  TOKEN_2022_PROGRAM_ID,
+} from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { clsx, type ClassValue } from "clsx";
 import millify from "millify";
@@ -141,9 +145,8 @@ export const validatePublicKey = (address: PublicKey | string) => {
   }
 };
 
-
-export const getExplorerUrl = (address: string, type: 'account' | 'tx') => {
-  const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK;
+export const getExplorerUrl = (address: string, type: "account" | "tx") => {
+  const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK ?? "devnet";
   if (network === "devnet") {
     return `https://solscan.io/${type}/${address}?cluster=devnet`;
   } else if (network === "testnet") {
@@ -151,7 +154,7 @@ export const getExplorerUrl = (address: string, type: 'account' | 'tx') => {
   } else {
     return `https://solscan.io/${type}/${address}`;
   }
-}
+};
 
 export const checkIfAtaExist = async ({
   owner,
@@ -160,9 +163,12 @@ export const checkIfAtaExist = async ({
   owner: PublicKey;
   mint: PublicKey;
 }) => {
-
-
-  const ata = getAssociatedTokenAddressSync(mint, owner, false, TOKEN_2022_PROGRAM_ID);
+  const ata = getAssociatedTokenAddressSync(
+    mint,
+    owner,
+    false,
+    TOKEN_2022_PROGRAM_ID
+  );
   // check if originalAta is valid
   let hasAta = false;
   if (ata) {
@@ -182,8 +188,6 @@ export const checkIfAtaExist = async ({
 };
 
 export const checkIfAccountExist = async (account: PublicKey) => {
-
-
   let accountExist = false;
   if (account) {
     try {

@@ -29,6 +29,7 @@ import {
   TwitterIcon,
 } from "lucide-react";
 import useAssets from "@/hooks/useAssets";
+import Logo from "./Logo";
 
 const userAssets = [WSOL_MINT, USDC_MINT];
 
@@ -59,7 +60,7 @@ const Header = ({ showSidebarTrigger = false }: HeaderProps) => {
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#14F195] to-[#9945FF]">
                 <BinaryIcon size={22} className="text-white" />
               </div>
-              <span>cToken Tool</span>
+              <Logo />
             </h1>
           </Link>
         </div>
