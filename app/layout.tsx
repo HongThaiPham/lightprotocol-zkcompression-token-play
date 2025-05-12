@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import AppProvider from "@/components/providers/AppProvider";
-import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -33,13 +31,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${roboto_mono.variable} antialiased bg-gradient-pattern`}
       >
-        <AppProvider>
-          <main className="flex min-h-screen flex-col opacity-90">
-            <Header />
-            {children}
-            <Footer />
-          </main>
-        </AppProvider>
+        <AppProvider>{children}</AppProvider>
       </body>
     </html>
   );

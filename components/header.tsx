@@ -51,7 +51,7 @@ const Header = ({ showSidebarTrigger = false }: HeaderProps) => {
   }, [connecting]);
 
   return (
-    <header className="flex h-16 w-full items-center border-b border-border">
+    <header className="flex h-16 w-full items-center border-b border-border sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex w-full items-center justify-between gap-6 px-4 lg:px-6">
         <div className="flex items-center gap-3">
           {showSidebarTrigger && <SidebarTrigger />}
@@ -66,22 +66,38 @@ const Header = ({ showSidebarTrigger = false }: HeaderProps) => {
         </div>
         <nav className="flex items-center gap-4 font-mono lg:gap-10">
           <ul className="hidden items-center gap-10 lg:flex">
-            <li>
-              <Link
-                href="/"
-                className="hidden text-sm text-muted-foreground transition-colors hover:text-primary xl:block"
-              >
-                Home
-              </Link>
-            </li>
-            <li>
+            <Link
+              href="#features"
+              className="hidden text-sm text-muted-foreground transition-colors hover:text-primary xl:block font-medium"
+            >
+              Features
+            </Link>
+            <Link
+              href="#how-it-works"
+              className="hidden text-sm text-muted-foreground transition-colors hover:text-primary xl:block font-medium"
+            >
+              How It Works
+            </Link>
+            <Link
+              href="#pricing"
+              className="hidden text-sm text-muted-foreground transition-colors hover:text-primary xl:block font-medium"
+            >
+              Pricing
+            </Link>
+            <Link
+              href="#faq"
+              className="hidden text-sm text-muted-foreground transition-colors hover:text-primary xl:block font-medium"
+            >
+              FAQ
+            </Link>
+            {/* <li>
               <Link
                 href="/create-c-token"
-                className="hidden text-sm text-muted-foreground transition-colors hover:text-primary xl:block"
+                className="hidden text-sm text-muted-foreground transition-colors hover:text-primary xl:block font-medium"
               >
                 Create cToken
               </Link>
-            </li>
+            </li> */}
 
             <li>
               <DropdownMenu
@@ -89,7 +105,7 @@ const Header = ({ showSidebarTrigger = false }: HeaderProps) => {
                 onOpenChange={setDemoDropdownOpen}
               >
                 <DropdownMenuTrigger asChild>
-                  <button className="text-sm text-muted-foreground outline-none transition-colors hover:text-primary">
+                  <button className="text-sm text-muted-foreground outline-none transition-colors hover:text-primary font-medium">
                     Tools
                   </button>
                 </DropdownMenuTrigger>
@@ -104,7 +120,7 @@ const Header = ({ showSidebarTrigger = false }: HeaderProps) => {
                       onClick={() => setDemoDropdownOpen(false)}
                     >
                       <Link
-                        href="/create-token"
+                        href="/create-c-token"
                         className="flex w-full cursor-pointer items-center gap-2"
                       >
                         <LayoutDashboardIcon size={16} />
@@ -115,7 +131,7 @@ const Header = ({ showSidebarTrigger = false }: HeaderProps) => {
                       onClick={() => setDemoDropdownOpen(false)}
                     >
                       <Link
-                        href="/"
+                        href={`/tokens/${publicKey}`}
                         className="flex w-full cursor-pointer items-center gap-2"
                       >
                         <RefreshCcwIcon size={16} />

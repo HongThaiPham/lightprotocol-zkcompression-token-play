@@ -2,8 +2,6 @@
 
 import React from "react";
 import { PublicKey } from "@solana/web3.js";
-import { useConnection } from "@solana/wallet-adapter-react";
-import { getPrimaryDomain } from "@bonfida/spl-name-service";
 import { SearchIcon } from "lucide-react";
 
 import { SolAsset } from "@/lib/types";
@@ -33,8 +31,6 @@ type WalletProps = {
 
 const Wallet = ({ address, assets, trigger, onAssetClick }: WalletProps) => {
   const [search, setSearch] = React.useState("");
-  const { connection } = useConnection();
-  const [domain, setDomain] = React.useState<string | null>(null);
 
   const totalBalanceUsd = React.useMemo(
     () =>
@@ -56,21 +52,6 @@ const Wallet = ({ address, assets, trigger, onAssetClick }: WalletProps) => {
       : [];
   }, [assets, search]);
 
-  const fetchDomain = React.useCallback(async () => {
-    if (!connection || !address) return;
-    try {
-      const { reverse } = await getPrimaryDomain(connection, address);
-      setDomain(`${reverse}.sol`);
-    } catch (error) {
-      console.error("Error fetching domain:", error);
-      setDomain(null);
-    }
-  }, [connection, address]);
-
-  React.useEffect(() => {
-    fetchDomain();
-  }, [fetchDomain]);
-
   if (!address) {
     return <Skeleton className="h-full w-full rounded-full" />;
   }
@@ -90,14 +71,7 @@ const Wallet = ({ address, assets, trigger, onAssetClick }: WalletProps) => {
           <SheetTitle className="absolute inset-y-0 left-4 flex flex-col items-start justify-center gap-0.5 text-sm font-normal text-muted-foreground">
             <div className="flex items-center gap-2">
               <Avatar address={address} size={28} />
-              {domain ? (
-                <div className="flex flex-col leading-tight">
-                  <span>{domain}</span>
-                  <span className="text-[11px]">{shortAddress(address)}</span>
-                </div>
-              ) : (
-                shortAddress(address)
-              )}
+              shortAddress(address)
             </div>
           </SheetTitle>
           <SheetDescription className="sr-only">
