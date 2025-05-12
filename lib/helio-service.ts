@@ -56,7 +56,15 @@ export async function createPayLink() {
         recipients: [
           {
             walletId: WALLET_ID, // Change this to your wallet id
-            currencyId: "63430c8348c610068bcdc474", // To get currency IDs, see the /get-currencies endpoint
+            currencyId: "63430c8348c610068bcdc474", // SOL
+          },
+          {
+            walletId: WALLET_ID, // Change this to your wallet id
+            currencyId: "66e2b724a88df2dcc5f63fe8", // USDC-main
+          },
+          {
+            walletId: WALLET_ID, // Change this to your wallet id
+            currencyId: "63430c8348c610068bcdc482", // USDT-dev
           },
         ],
         subscriptionDetails: {
