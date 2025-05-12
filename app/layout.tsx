@@ -18,8 +18,9 @@ const roboto_mono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Light Protocol - cToken tools",
-  description: "A set of tools for cToken compression",
+  title: "CompressX - Solana Token Compression Service",
+  description:
+    "Save up to 98% on storage costs with our state-of-the-art token compression service for Solana.",
 };
 
 export default function RootLayout({
@@ -29,7 +30,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${roboto_mono.variable} antialiased`}>
+      <body
+        className={`${inter.variable} ${roboto_mono.variable} antialiased bg-gradient-pattern`}
+      >
         <AppProvider>
           <main className="flex min-h-screen flex-col opacity-90">
             <Header />

@@ -11,6 +11,7 @@ import {
   getMint,
   getTokenMetadata,
   TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 
 /**
@@ -195,18 +196,36 @@ const fetchWalletCompressedTokens = async ({
 
     const mintWithTokenMetdata = await Promise.all(
       items.map(async (item: { mint: string; balance: number | bigint }) => {
-        const tokenMetadata = await getTokenMetadata(
-          networkConnection,
-          new PublicKey(item.mint),
-          "confirmed",
-          TOKEN_2022_PROGRAM_ID
-        );
+        const mintPubkey = new PublicKey(item.mint);
+
+        const accountInfo = await networkConnection.getAccountInfo(mintPubkey);
+
         const mintInfo = await getMint(
           networkConnection,
-          new PublicKey(item.mint),
+          mintPubkey,
           "confirmed",
-          TOKEN_2022_PROGRAM_ID
+          accountInfo?.owner || TOKEN_2022_PROGRAM_ID
         );
+
+        // const metadataPointer = getMetadataPointerState(mintInfo);
+        let tokenMetadata = null;
+        if (
+          !accountInfo?.owner ||
+          accountInfo?.owner.equals(TOKEN_PROGRAM_ID)
+        ) {
+          console.error("No metadata pointer found for mint:", item.mint);
+          tokenMetadata = {
+            name: undefined,
+            symbol: undefined,
+          };
+        } else {
+          tokenMetadata = await getTokenMetadata(
+            networkConnection,
+            mintPubkey,
+            "confirmed",
+            TOKEN_2022_PROGRAM_ID
+          );
+        }
         return {
           ...item,
           tokenMetadata,
@@ -229,7 +248,7 @@ const fetchWalletCompressedTokens = async ({
           address: asset.mint,
           amount: tokenBalance,
         },
-        authority: asset.mintInfo.mintAuthority,
+        authority: asset.mintInfo.mintAuthority.toBase58(),
       });
     }
 

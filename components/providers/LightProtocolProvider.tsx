@@ -58,7 +58,10 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
       throw new Error("No connected wallet");
     }
 
-    const signingToast = txnToast();
+    const signingToast = txnToast(
+      "Creating mint...",
+      "Please sign the transaction to create new token mint"
+    );
 
     console.log("getting blockhash...");
     const {
@@ -84,24 +87,32 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
       [mintKp]
     );
 
-    console.log("sending tx for signing...");
-    const txnSignature = await sendTransaction(transaction, lightConnection, {
-      signers: [mintKp],
-      minContextSlot,
-    });
+    try {
+      console.log("sending tx for signing...");
+      const txnSignature = await sendTransaction(transaction, lightConnection, {
+        signers: [mintKp],
+        minContextSlot,
+      });
 
-    console.log("confirming tx...");
-    const confirmation = lightConnection.confirmTransaction({
-      blockhash: blockhashCtx.blockhash,
-      lastValidBlockHeight: blockhashCtx.lastValidBlockHeight,
-      signature: txnSignature,
-    });
+      console.log("confirming tx...");
+      const confirmation = lightConnection.confirmTransaction({
+        blockhash: blockhashCtx.blockhash,
+        lastValidBlockHeight: blockhashCtx.lastValidBlockHeight,
+        signature: txnSignature,
+      });
 
-    signingToast.confirm(txnSignature, confirmation);
+      signingToast.confirm(txnSignature, confirmation);
 
-    console.log("tx confirmed:", txnSignature);
-    console.log("new mint:", mintKp.publicKey);
-    return { txnSignature, mint: mintKp.publicKey };
+      console.log("tx confirmed:", txnSignature);
+      console.log("new mint:", mintKp.publicKey);
+      return { txnSignature, mint: mintKp.publicKey };
+    } catch (error) {
+      console.error("Error creating mint:", error);
+      signingToast.error(
+        error instanceof Error ? error.message : "Something went wrong"
+      );
+      throw error;
+    }
   };
 
   const mintTokens = async ({
@@ -113,7 +124,10 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
     if (!connectedWallet) {
       throw new Error("No connected wallet");
     }
-    const signingToast = txnToast();
+    const signingToast = txnToast(
+      "Minting tokens...",
+      "Please sign the transaction to mint tokens"
+    );
 
     console.log("getting blockhash...");
     const {
@@ -136,22 +150,30 @@ export const LightProtocolProvider: React.FC<PropsWithChildren> = ({
       blockhashCtx.blockhash
     );
 
-    console.log("sending tx for signing...");
-    const signature = await sendTransaction(transaction, lightConnection, {
-      minContextSlot,
-    });
+    try {
+      console.log("sending tx for signing...");
+      const signature = await sendTransaction(transaction, lightConnection, {
+        minContextSlot,
+      });
 
-    console.log("confirming tx...");
+      console.log("confirming tx...");
 
-    const confirmation = lightConnection.confirmTransaction({
-      blockhash: blockhashCtx.blockhash,
-      lastValidBlockHeight: blockhashCtx.lastValidBlockHeight,
-      signature,
-    });
-    signingToast.confirm(signature, confirmation);
+      const confirmation = lightConnection.confirmTransaction({
+        blockhash: blockhashCtx.blockhash,
+        lastValidBlockHeight: blockhashCtx.lastValidBlockHeight,
+        signature,
+      });
+      signingToast.confirm(signature, confirmation);
 
-    console.log("tx confirmed", signature);
-    return { txnSignature: signature };
+      console.log("tx confirmed", signature);
+      return { txnSignature: signature };
+    } catch (error) {
+      console.error("Error minting tokens:", error);
+      signingToast.error(
+        error instanceof Error ? error.message : "Something went wrong"
+      );
+      throw error;
+    }
   };
 
   return (

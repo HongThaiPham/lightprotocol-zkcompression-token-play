@@ -157,6 +157,20 @@ export const createZKMintIx = async ({
     tokenProgramId: TOKEN_2022_PROGRAM_ID,
   });
 
+  const ataAddress = getAssociatedTokenAddressSync(
+    mintAddress,
+    creator,
+    false,
+    TOKEN_2022_PROGRAM_ID
+  );
+  const createAtaIx = createAssociatedTokenAccountInstruction(
+    creator,
+    ataAddress,
+    creator,
+    mintAddress,
+    TOKEN_2022_PROGRAM_ID
+  );
+
   const createMintIxs = [
     createMintAccountIx,
     initializeMetadataPointerInstruction,
@@ -167,6 +181,7 @@ export const createZKMintIx = async ({
     initializeMetadataInstruction,
     ...updateFieldInstructions,
     createTokenPoolIx,
+    createAtaIx,
   ];
 
   return { instructions: createMintIxs, mintKp };

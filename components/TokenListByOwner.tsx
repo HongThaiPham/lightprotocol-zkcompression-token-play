@@ -31,7 +31,7 @@ const TokenListByOwner = ({ wallet }: { wallet: string }) => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <TokenList assets={data} />
+        <TokenList assets={data} isLoading={isPending} />
       </CardContent>
     </Card>
   );

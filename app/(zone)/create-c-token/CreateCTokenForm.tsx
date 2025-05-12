@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusIcon, TrashIcon } from "lucide-react";
+import { CheckIcon, Loader2Icon, PlusIcon, TrashIcon } from "lucide-react";
 import useCreateMint from "@/hooks/useCreateMint";
 
 const formSchema = z.object({
@@ -47,12 +47,15 @@ const formSchema = z.object({
       })
     )
     .optional(),
+  initialSupply: z.coerce
+    .number()
+    .min(1, "Initial supply must be a positive number"),
 });
 
 type FormSchemaType = z.infer<typeof formSchema>;
 
 const CreateCTokenForm = () => {
-  const { mutate } = useCreateMint();
+  const { mutate, isPending } = useCreateMint();
   const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -60,6 +63,7 @@ const CreateCTokenForm = () => {
       symbol: "",
       uri: "",
       decimals: 6,
+      initialSupply: 1,
     },
   });
 
@@ -130,24 +134,46 @@ const CreateCTokenForm = () => {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="uri"
+              render={({ field }) => (
+                <FormItem className="col-span-1 md:col-span-2">
+                  <FormLabel>Token URI</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Input token URI" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    This is the URI of the token. It will be used to identify
+                    the token in the system.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="initialSupply"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Initial Supply</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Input token initial supply"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    This is the initial supply of the token.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
-          <FormField
-            control={form.control}
-            name="uri"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Token URI</FormLabel>
-                <FormControl>
-                  <Input placeholder="Input token URI" {...field} />
-                </FormControl>
-                <FormDescription>
-                  This is the URI of the token. It will be used to identify the
-                  token in the system.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
           {fields.map((field, index) => (
             <div className="flex w-full items-center gap-6" key={field.id}>
               <FormField
@@ -200,10 +226,18 @@ const CreateCTokenForm = () => {
             }}
             className="self-start"
           >
-            Add attributes <PlusIcon />
+            <PlusIcon />
+            Add attributes
           </Button>
-          <div>
-            <Button type="submit">Submit</Button>
+          <div className="flex items-center justify-end space-x-2">
+            <Button type="submit" disabled={isPending}>
+              {isPending ? (
+                <Loader2Icon className="animate-spin mr-2" />
+              ) : (
+                <CheckIcon />
+              )}
+              Submit
+            </Button>
           </div>
         </div>
       </form>

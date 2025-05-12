@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { ExternalLinkIcon } from "lucide-react";
+import { EllipsisVerticalIcon, ExternalLinkIcon } from "lucide-react";
 
 import {
   shortAddress,
@@ -24,12 +24,23 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { TokenIcon } from "@/components/sol/token-icon";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { Button } from "../ui/button";
 
 type TokenListProps = {
   assets: SolAsset[];
   showBalances?: boolean;
   showPrice?: boolean;
   onClick?: (token: SolAsset) => void;
+  isLoading?: boolean;
 };
 
 const TokenList = ({
@@ -37,6 +48,7 @@ const TokenList = ({
   showBalances = true,
   showPrice = false,
   onClick,
+  isLoading,
 }: TokenListProps) => {
   return (
     <Table className="w-full">
@@ -47,10 +59,11 @@ const TokenList = ({
           {showPrice && <TableHead>Price</TableHead>}
           {showBalances && <TableHead>Balance</TableHead>}
           {showPrice && <TableHead>Value</TableHead>}
+          <TableHead className="text-end">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {assets.length === 0 ? (
+        {isLoading || assets.length === 0 ? (
           <>
             {[...Array(3)].map((_, index) => (
               <TableRow key={index} className="hover:bg-transparent">
@@ -118,6 +131,26 @@ const TokenList = ({
                     )}
                 </TableCell>
               )}
+              <TableCell className="text-end">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size={"icon"} variant="ghost">
+                      <EllipsisVerticalIcon />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuLabel>Token Mint actions</DropdownMenuLabel>
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem>Mint to</DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>Token Account actions</DropdownMenuLabel>
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem>Transfer token</DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
             </TableRow>
           ))
         )}
