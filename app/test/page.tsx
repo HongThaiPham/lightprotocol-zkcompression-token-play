@@ -8,6 +8,10 @@ import {
 
 const TestPage = () => {
   const handleCreatePayLink = async () => {
+    const link = await createPayLinkAction();
+    console.log("HELIO API result", link);
+  };
+  const handleCreateChargeLink = async () => {
     const link = await createChargeLinkAction();
     console.log("HELIO API result", link);
   };
@@ -15,6 +19,7 @@ const TestPage = () => {
     <div>
       TestPage
       <Button onClick={handleCreatePayLink}>Create paylink</Button>
+      <Button onClick={handleCreateChargeLink}>Create paylink</Button>
     </div>
   );
 };
