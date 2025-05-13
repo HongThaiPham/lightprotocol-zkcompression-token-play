@@ -19,6 +19,12 @@ Welcome to the **LightProtocol ZK Compression Token** project! This repository f
 
 Token compression is a critical aspect of blockchain scalability. By leveraging Zero-Knowledge proofs, this project enables efficient and private SPL token operations on Solana. The combination of ZK technology and Solana's high-performance blockchain ensures a seamless experience for developers and users.
 
+### Demo
+
+Video demo of the project can be found here: [https://ctoken-tools.leopham.app/](https://ctoken-tools.leopham.app/).
+
+[![Demo](https://i9.ytimg.com/vi_webp/G4twVdpYWBM/mq2.webp?sqp=COCpisEG-oaymwEmCMACELQB8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGE8gTihlMA8=&rs=AOn4CLDRt-AOZkk3tRgAQJRt3XwvRSw9-Q)](https://youtu.be/G4twVdpYWBM)
+
 ---
 
 ## Features
