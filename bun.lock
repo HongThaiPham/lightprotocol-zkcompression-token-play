@@ -5,6 +5,7 @@
       "name": "lightprotocol-zkcompression-token-play",
       "dependencies": {
         "@coral-xyz/anchor": "0.30.1",
+        "@heliofi/checkout-react": "^3.1.0",
         "@hookform/resolvers": "^5.0.1",
         "@lightprotocol/compressed-token": "^0.21.0",
         "@lightprotocol/stateless.js": "^0.21.0",
@@ -185,6 +186,8 @@
     "@fractalwagmi/popup-connection": ["@fractalwagmi/popup-connection@1.1.1", "", { "peerDependencies": { "react": "^17.0.2 || ^18", "react-dom": "^17.0.2 || ^18" } }, "sha512-hYL+45iYwNbwjvP2DxP3YzVsrAGtj/RV9LOgMpJyCxsfNoyyOoi2+YrnywKkiANingiG2kJ1nKsizbu1Bd4zZw=="],
 
     "@fractalwagmi/solana-wallet-adapter": ["@fractalwagmi/solana-wallet-adapter@0.1.1", "", { "dependencies": { "@fractalwagmi/popup-connection": "^1.0.18", "@solana/wallet-adapter-base": "^0.9.17", "bs58": "^5.0.0" } }, "sha512-oTZLEuD+zLKXyhZC5tDRMPKPj8iaxKLxXiCjqRfOo4xmSbS2izGRWLJbKMYYsJysn/OI3UJ3P6CWP8WUWi0dZg=="],
+
+    "@heliofi/checkout-react": ["@heliofi/checkout-react@3.1.0", "", { "peerDependencies": { "react": "^19", "react-dom": "^19" } }, "sha512-X/tqJr2Tft3MsSgz8QjxNcFtAjYBJCTmhhf3sDeM6QYRFH85GMsJa4ZYvY8WtpQ7BvzpToDQwsYq8YYXR9ZPKg=="],
 
     "@hookform/resolvers": ["@hookform/resolvers@5.0.1", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "react-hook-form": "^7.55.0" } }, "sha512-u/+Jp83luQNx9AdyW2fIPGY6Y7NG68eN2ZW8FOJYL+M0i4s49+refdJdOp/A9n9HFQtQs3HIDHQvX3ZET2o7YA=="],
 

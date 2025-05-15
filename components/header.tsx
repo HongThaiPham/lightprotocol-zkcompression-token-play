@@ -131,6 +131,17 @@ const Header = ({ showSidebarTrigger = false }: HeaderProps) => {
                       onClick={() => setDemoDropdownOpen(false)}
                     >
                       <Link
+                        href="/create-c-token-with-solana-pay"
+                        className="flex w-full cursor-pointer items-center gap-2"
+                      >
+                        <LayoutDashboardIcon size={16} />
+                        <span>Create cToken with Solana Pay</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setDemoDropdownOpen(false)}
+                    >
+                      <Link
                         href={`/tokens/${publicKey}`}
                         className="flex w-full cursor-pointer items-center gap-2"
                       >

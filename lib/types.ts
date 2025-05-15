@@ -162,3 +162,24 @@ export type TokenAccount = {
   mint: string;
   owner: string;
 };
+
+export type CheckHelioChargeIdResponse = {
+  id: string;
+  token: string;
+  paylink: {
+    id: string;
+  };
+  paylinkTx?: {
+    id: string;
+    paylinkId: string;
+    meta: {
+      id: string;
+      amount: string;
+      senderPK: string;
+      recipientPK: string;
+      transactionSignature: string;
+      transactionStatus: string;
+    };
+  };
+  pricingCurrencyRequestAmount: string;
+};

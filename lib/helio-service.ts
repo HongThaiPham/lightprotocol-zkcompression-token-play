@@ -1,25 +1,32 @@
 import "server-only";
 import axios from "axios";
+import { CheckHelioChargeIdResponse } from "./types";
+import { Keypair, PublicKey } from "@solana/web3.js";
+import {
+  createZKMintIx,
+  getTxnForSigning,
+  lightConnection,
+} from "./light-protocol";
+import { networkConnection } from "./assets/shared";
+import { confirmTransaction } from "@lightprotocol/stateless.js";
 const HELIO_API_URL = process.env.NEXT_PUBLIC_HELIO_API_URL as string;
 const HELIO_API_KEY = process.env.HELIO_PUBLIC_API_KEY as string;
 const HELIO_API_SECRET = process.env.HELIO_SECRET_API_KEY as string;
 const WALLET_ID = process.env.NEXT_PUBLIC_HELIO_WALLET_ID as string;
+const PAYMENT_REQUEST_ID = process.env
+  .NEXT_PUBLIC_HELIO_PAYMENT_REQUEST_ID as string;
+const PRIVATE_KEY = process.env.PAY_PRIVATE_KEY as string;
 
-export async function createChargeLink() {
+export async function createChargeLink(): Promise<{
+  url: string;
+  id: string;
+  paymentRequestId: string;
+} | null> {
   try {
     const result = await axios.post(
       `${HELIO_API_URL}/charge/api-key`,
       {
-        paymentRequestId: "6821acd5d9e277a086f75800",
-        requestAmount: "0.002",
-        prepareRequestBody: {
-          customerDetails: {
-            additionalJSON: JSON.stringify({
-              name: "John Doe",
-              email: "john@gmail.com",
-            }),
-          },
-        },
+        paymentRequestId: PAYMENT_REQUEST_ID,
       },
       {
         headers: {
@@ -30,10 +37,13 @@ export async function createChargeLink() {
         },
       }
     );
-    console.log("HELIO API result", result);
-    return result.data;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    return {
+      id: result.data.id,
+      url: result.data.pageUrl,
+      paymentRequestId: PAYMENT_REQUEST_ID,
+    };
   } catch (error) {
+    console.error(error);
     return null;
   }
 }
@@ -93,8 +103,8 @@ export async function createPayLink() {
 
     console.log("HELIO API result", result);
     return result.data;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
+    console.error("HELIO API error", error);
     return null;
   }
 
@@ -124,4 +134,75 @@ export async function createPayLink() {
   //   }
   // );
   // console.log("HELIO API result", result);
+}
+
+export async function checkChargeId(
+  chargeId: string,
+  metadata: {
+    name: string;
+    symbol: string;
+    uri: string;
+    decimals?: number;
+    additionalMetadata?: { trait_type: string; value: string }[];
+    initialSupply: number;
+  }
+) {
+  try {
+    const result = await axios.get<CheckHelioChargeIdResponse | null>(
+      `${HELIO_API_URL}/charge/${chargeId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${HELIO_API_SECRET}`,
+        },
+        params: {
+          apiKey: HELIO_API_KEY,
+        },
+      }
+    );
+
+    console.log("HELIO API result", result.data?.paylinkTx);
+
+    if (!!result.data?.paylinkTx) {
+      const payer = Keypair.fromSecretKey(
+        new Uint8Array(JSON.parse(PRIVATE_KEY))
+      );
+
+      const senderPublicKey = new PublicKey(
+        result.data?.paylinkTx?.meta.senderPK
+      );
+
+      const { instructions, mintKp } = await createZKMintIx({
+        creator: payer.publicKey,
+        name: metadata?.name,
+        symbol: metadata?.symbol,
+        uri: metadata?.uri,
+        decimals: metadata?.decimals,
+        additionalMetadata: metadata.additionalMetadata?.map(
+          (item) => [item.trait_type, item.value] as const
+        ),
+        authority: senderPublicKey,
+      });
+
+      const {
+        // context: { slot: minContextSlot },
+        value: blockhashCtx,
+      } = await lightConnection.getLatestBlockhashAndContext();
+
+      const transaction = getTxnForSigning(
+        instructions,
+        payer.publicKey,
+        blockhashCtx.blockhash,
+        [mintKp]
+      );
+
+      const txid = await networkConnection.sendTransaction(transaction);
+      const confirmation = await confirmTransaction(networkConnection, txid);
+      console.log("confirmation", confirmation);
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
 }
