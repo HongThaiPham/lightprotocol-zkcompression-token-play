@@ -153,6 +153,7 @@ export async function checkChargeId(
   }
 ) {
   try {
+    console.log(`call: ${HELIO_API_URL}/charge/${chargeId}`);
     const result = await axios.get<CheckHelioChargeIdResponse | null>(
       `${HELIO_API_URL}/charge/${chargeId}`,
       {
