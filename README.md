@@ -28,6 +28,9 @@ Video demo of the project can be found here: [https://ctoken-tools.leopham.app/]
 Create Token mint pay with Wallet: [https://ctoken-tools.leopham.app/create-c-token](https://ctoken-tools.leopham.app/create-c-token)
 Create Token mint pay with Solana Pay: [https://ctoken-tools.leopham.app/create-c-token-with-solana-pay](https://ctoken-tools.leopham.app/create-c-token-with-solana-pay)
 
+[![Demo with solana pay](https://i9.ytimg.com/vi/983bbWzGxpE/mq2.jpg?sqp=CODdmsEG-oaymwEmCMACELQB8quKqQMa8AEB-AHUBoAC4AOKAgwIABABGGUgZShlMA8=&rs=AOn4CLC_Gg0RawQ1TWx4iAuC9fdYX2nA-Q)](https://youtu.be/983bbWzGxpE)
+https://youtu.be/983bbWzGxpE
+
 ---
 
 ## Features
