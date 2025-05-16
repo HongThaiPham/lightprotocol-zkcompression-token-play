@@ -60,6 +60,7 @@ const HelioProvider: React.FC<PropsWithChildren> = ({ children }) => {
     queryKey: ["check-charge-link", chargeId],
     queryFn: async () => {
       setIsChecking(true);
+
       return checkChargeLinkAction(chargeId, metadata);
     },
     enabled: !!chargeId,

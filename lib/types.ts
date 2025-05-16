@@ -182,4 +182,5 @@ export type CheckHelioChargeIdResponse = {
     };
   };
   pricingCurrencyRequestAmount: string;
+  mint?: string;
 };

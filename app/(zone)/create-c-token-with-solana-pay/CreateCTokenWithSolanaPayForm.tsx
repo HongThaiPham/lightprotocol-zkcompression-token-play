@@ -19,6 +19,7 @@ import useCreateMint from "@/hooks/useCreateMint";
 import { toast } from "sonner";
 
 import { useHelio } from "@/components/providers/HelioProvider";
+import { getExplorerUrl } from "@/lib/utils";
 
 const formSchema = z.object({
   name: z.string().min(5, "Name is required"),
@@ -80,6 +81,7 @@ const CreateCTokenWithSolanaPayForm = () => {
 
   async function onSubmit(values: FormSchemaType) {
     console.log("values", values);
+
     setMetadata({
       name: values.name,
       symbol: values.symbol,
@@ -104,11 +106,21 @@ const CreateCTokenWithSolanaPayForm = () => {
     a.remove();
   }
 
-  if (chargeLinkData && chargeLinkData?.paylinkTx) {
+  if (chargeLinkData && !!chargeLinkData?.paylinkTx && !!chargeLinkData?.mint) {
     toast.success(
-      "Charge link created successfully. Redirecting to payment page..."
+      <div>
+        Token created successfully. You can check mint info on Solana Explorer{" "}
+        <a
+          href={getExplorerUrl(chargeLinkData.mint, "account")}
+          target="_blank"
+          className="text-blue-500"
+          rel="noopener noreferrer"
+        >
+          {chargeLinkData.mint}
+        </a>
+      </div>
     );
-    // form.reset();
+    form.reset();
     setChargeId(undefined);
   }
 

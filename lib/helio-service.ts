@@ -4,11 +4,16 @@ import { CheckHelioChargeIdResponse } from "./types";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import {
   createZKMintIx,
+  createZKMintToIx,
   getTxnForSigning,
   lightConnection,
 } from "./light-protocol";
 import { networkConnection } from "./assets/shared";
-import { confirmTransaction } from "@lightprotocol/stateless.js";
+import {
+  AuthorityType,
+  createSetAuthorityInstruction,
+  TOKEN_2022_PROGRAM_ID,
+} from "@solana/spl-token";
 const HELIO_API_URL = process.env.NEXT_PUBLIC_HELIO_API_URL as string;
 const HELIO_API_KEY = process.env.HELIO_PUBLIC_API_KEY as string;
 const HELIO_API_SECRET = process.env.HELIO_SECRET_API_KEY as string;
@@ -171,6 +176,8 @@ export async function checkChargeId(
         result.data?.paylinkTx?.meta.senderPK
       );
 
+      console.log("senderPublicKey", senderPublicKey.toBase58());
+
       const { instructions, mintKp } = await createZKMintIx({
         creator: payer.publicKey,
         name: metadata?.name,
@@ -195,9 +202,64 @@ export async function checkChargeId(
         [mintKp]
       );
 
-      const txid = await networkConnection.sendTransaction(transaction);
-      const confirmation = await confirmTransaction(networkConnection, txid);
+      transaction.sign([payer]);
+
+      const signature = await networkConnection.sendTransaction(transaction, {
+        skipPreflight: false,
+        preflightCommitment: "confirmed",
+      });
+      const confirmation = await lightConnection.confirmTransaction({
+        blockhash: blockhashCtx.blockhash,
+        lastValidBlockHeight: blockhashCtx.lastValidBlockHeight,
+        signature,
+      });
       console.log("confirmation", confirmation);
+
+      const { instructions: mintoItxs } = await createZKMintToIx({
+        authority: payer.publicKey,
+        mint: mintKp.publicKey,
+        amount: metadata.initialSupply,
+        to: senderPublicKey,
+      });
+
+      const {
+        // context: { slot: minContextSlot },
+        value: blockhashCtx2,
+      } = await lightConnection.getLatestBlockhashAndContext();
+
+      const updateMintAuthorityIx = createSetAuthorityInstruction(
+        mintKp.publicKey,
+        payer.publicKey,
+        AuthorityType.MintTokens,
+        senderPublicKey,
+        [],
+        TOKEN_2022_PROGRAM_ID
+      );
+
+      const transaction2 = getTxnForSigning(
+        [...mintoItxs, updateMintAuthorityIx],
+        payer.publicKey,
+        blockhashCtx2.blockhash
+      );
+
+      transaction2.sign([payer]);
+
+      const signature2 = await networkConnection.sendTransaction(transaction2, {
+        skipPreflight: false,
+        preflightCommitment: "confirmed",
+      });
+      const confirmation2 = await lightConnection.confirmTransaction({
+        blockhash: blockhashCtx2.blockhash,
+        lastValidBlockHeight: blockhashCtx2.lastValidBlockHeight,
+        signature: signature2,
+      });
+      //confirmTransaction(networkConnection, txid);
+      console.log("confirmation2", confirmation2);
+
+      return {
+        mint: mintKp.publicKey.toBase58(),
+        ...result.data,
+      };
     }
 
     return result.data;

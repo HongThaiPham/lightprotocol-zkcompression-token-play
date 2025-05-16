@@ -68,7 +68,7 @@ export const createZKMintIx = async ({
 }: CreateZKMintIxArgs): Promise<BaseIxResponse & { mintKp: Keypair }> => {
   const mintKp = Keypair.generate();
   const mintAddress = mintKp.publicKey;
-  const mintAuthority = authority ?? creator;
+  const mintAuthority = creator;
   const freezeAuthority = authority ?? creator;
   const metadata: TokenMetadata = {
     mint: mintAddress,
@@ -159,16 +159,18 @@ export const createZKMintIx = async ({
     tokenProgramId: TOKEN_2022_PROGRAM_ID,
   });
 
+  const recevier = authority || creator;
+
   const ataAddress = getAssociatedTokenAddressSync(
     mintAddress,
-    creator,
+    recevier,
     false,
     TOKEN_2022_PROGRAM_ID
   );
   const createAtaIx = createAssociatedTokenAccountInstruction(
     creator,
     ataAddress,
-    creator,
+    recevier,
     mintAddress,
     TOKEN_2022_PROGRAM_ID
   );
@@ -210,7 +212,7 @@ export const createZKMintToIx = async ({
   const mintToIx = await CompressedTokenProgram.mintTo({
     feePayer: authority,
     mint,
-    authority: authority ?? to,
+    authority: authority,
     amount: tokAmount,
     toPubkey: to,
     outputStateTreeInfo,

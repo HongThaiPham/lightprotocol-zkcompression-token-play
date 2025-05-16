@@ -57,6 +57,6 @@ export async function checkChargeLinkAction(
     return null;
   }
   const response = await checkChargeId(chargeId, metadata);
-  console.log("response", response);
+  // console.log("response", response);
   return response;
 }
