@@ -279,15 +279,15 @@ const CreateCTokenWithSolanaPayForm = () => {
             Add attributes
           </Button>
           <div className="flex items-center justify-end space-x-2">
-            <Button type="submit" disabled={isPending}>
+            {/* <Button type="submit" disabled={isPending}>
               {isPending ? (
                 <Loader2Icon className="animate-spin mr-2" />
               ) : (
                 <CheckIcon />
               )}
               Submit
-            </Button>
-            <Button disabled={isPending}>
+            </Button> */}
+            <Button type="submit" disabled={isPending}>
               {isPending ? (
                 <Loader2Icon className="animate-spin mr-2" />
               ) : (
